@@ -1,6 +1,5 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-import { BrowserRouter as Router } from "react-router-dom";
 import Layout from "./components/layout";
 import HomePage from "./pages/homePage";
 import LoginPage from "./pages/loginPage";
@@ -9,6 +8,8 @@ import ForgotPasswordPage from "./pages/forgotPasswordPage";
 import ResetPasswordPage from "./pages/resetPasswordPage";
 import CourseLibraryPage from "./pages/courseLibrary";
 import CourseDetailPage from "./pages/courseDetail";
+import SubscriptionPage from "./pages/subscriptionPage";
+import ContentPage from "./pages/contentPlayer";
 import { useAuth } from "./context/authContext";
 
 function App() {
@@ -32,7 +33,9 @@ function App() {
         <Route path="reset-password/:token" element={<ResetPasswordPage />} />
         {/* --- Course Routes --- */}
         <Route path="courses" element={<CourseLibraryPage />} />
-        <Route path="course/:courseId" element={<CourseDetailPage />} />{" "}
+        <Route path="course/:courseId" element={<CourseDetailPage />} />
+        <Route path="subscribe" element={<SubscriptionPage />} />
+        <Route path="content" element={<ContentPage />} />
         {/* The :courseId is a dynamic parameter */}
         {/* We will add QuizPage and PaymentPage here later */}
         {/* <Route path="quiz/:quizId" element={<QuizPage />} /> */}

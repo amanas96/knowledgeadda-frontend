@@ -1,70 +1,116 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/authContext";
 import { useParams, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import AuthLayout from "../components/authLayout";
+import AuthInput from "../components/authInput";
 
 const ResetPasswordPage = () => {
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { resetPassword } = useAuth();
-
-  // Get the token from the URL (e.g., /reset-password/:token)
   const { token } = useParams();
-  console.log("🔍 ResetPasswordPage rendered");
-  console.log("🔑 Token from URL:", token);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setMessage("");
-
     if (password.length < 6) {
-      setError("Password must be at least 6 characters long.");
+      alert("Password must be at least 6 characters long.");
       return;
     }
 
-    const success = await resetPassword(token, password);
+    setLoading(true);
+    const result = await resetPassword(token, password);
+    setLoading(false);
 
-    if (success) {
-      setMessage("Password reset successfully! Redirecting to login...");
-      // Redirect to login page after 3 seconds
-      setTimeout(() => {
-        navigate("/login");
-      }, 3000);
+    if (result) {
+      setSuccess(true);
+      setTimeout(() => navigate("/login"), 4000);
     } else {
-      setError("Invalid or expired token. Please try again.");
+      alert("❌ Invalid or expired token. Please try again.");
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10">
-      <h2 className="text-2xl font-bold mb-5">Reset Your Password</h2>
-
-      {message ? (
-        <p className="text-green-600 bg-green-100 p-3 rounded">{message}</p>
-      ) : (
-        <form onSubmit={handleSubmit}>
-          {error && <p className="text-red-500 mb-4">{error}</p>}
-          <div className="mb-4">
-            <label className="block mb-2">New Password</label>
-            <input
+    <AuthLayout
+      title="Reset Your Password"
+      subtitle="Enter a new password for your account."
+    >
+      <AnimatePresence mode="wait">
+        {!success ? (
+          <motion.form
+            key="form"
+            onSubmit={handleSubmit}
+            className="space-y-5"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AuthInput
+              id="password"
+              label="New Password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border rounded"
-              required
+              placeholder="Enter new password"
             />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded"
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-3 font-semibold rounded-lg shadow-md transition-all duration-300 ${
+                loading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:from-blue-700 hover:to-indigo-700"
+              }`}
+            >
+              {loading ? "Updating..." : "Set New Password"}
+            </button>
+          </motion.form>
+        ) : (
+          <motion.div
+            key="success"
+            className="flex flex-col items-center justify-center bg-green-50 border border-green-200 rounded-xl p-6 text-center"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
           >
-            Set New Password
-          </button>
-        </form>
-      )}
-    </div>
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+
+            <h3 className="text-xl font-semibold text-green-700 mb-2">
+              Password Reset Successful!
+            </h3>
+            <p className="text-gray-600 text-sm mb-4">
+              Your password has been updated successfully. You can now log in
+              using your new password.
+            </p>
+            <button
+              onClick={() => navigate("/login")}
+              className="inline-block mt-3 text-blue-600 font-medium hover:underline"
+            >
+              Go to Login
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </AuthLayout>
   );
 };
 

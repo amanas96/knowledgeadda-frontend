@@ -19,7 +19,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null); // This is the short-lived accessToken
-  const [isLoading, setIsLoading] = useState(true); // For app load verification
+  const [isLoading, setIsLoading] = useState(true);
 
   // Ref to prevent multiple concurrent refresh calls
   const isRefreshingRef = useRef(false);
@@ -156,6 +156,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateSubscriptionStatus = (isSubscribed) => {
+    setUser((prevUser) => ({
+      ...prevUser,
+      isSubscribed: isSubscribed,
+    }));
+  };
+
   // ============================================
   // AXIOS INTERCEPTORS (The Refresh Logic)
   // ============================================
@@ -251,9 +258,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     verifyUser();
-    // This effect should only run once on app mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array
+  }, []);
 
   // ============================================
   // CONTEXT VALUE
@@ -268,6 +273,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     forgotPassword,
     resetPassword,
+    updateSubscriptionStatus,
   };
 
   return (
