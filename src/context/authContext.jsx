@@ -7,10 +7,6 @@ import React, {
   useCallback,
 } from "react";
 import apiClient from "../api/axios";
-import {
-  forgotPassword,
-  resetPassword,
-} from "../../../server/src/controllers/authController";
 
 // 1. Create the Context
 const AuthContext = createContext();
@@ -23,6 +19,16 @@ export const AuthProvider = ({ children }) => {
 
   // Ref to prevent multiple concurrent refresh calls
   const isRefreshingRef = useRef(false);
+
+  // // 🔍 DEBUG: Log state changes
+  // useEffect(() => {
+  //   console.log("🔐 AUTH STATE CHANGED:", {
+  //     isLoading,
+  //     isAuthenticated: !!token,
+  //     user: user?.email || "null",
+  //     token: token ? "exists" : "null",
+  //   });
+  // }, [isLoading, token, user]);
 
   // ============================================
   // LOGIN FUNCTION
@@ -38,18 +44,16 @@ export const AuthProvider = ({ children }) => {
       // 2. Set state from the response
       setToken(data.accessToken);
       setUser(data.user);
-
-      // 3. Store the long-lived refreshToken in localStorage
       localStorage.setItem("refreshToken", data.refreshToken);
 
       // 4. Set the default auth header for all future axios requests
       apiClient.defaults.headers.common["Authorization"] =
         `Bearer ${data.accessToken}`;
-
-      return true; // Indicate success
+      console.log("✅ Login successful:", data.user.email);
+      return true;
     } catch (error) {
       console.error("Login failed:", error);
-      return false; // Indicate failure
+      return false;
     }
   };
 
@@ -58,28 +62,22 @@ export const AuthProvider = ({ children }) => {
   // ============================================
   const register = async (name, email, password) => {
     try {
-      // 1. Call the register API
       const { data } = await apiClient.post("/api/auth/register", {
         name,
         email,
         password,
       });
 
-      // 2. Set state
       setToken(data.accessToken);
       setUser(data.user);
-
-      // 3. Store refresh token
       localStorage.setItem("refreshToken", data.refreshToken);
-
-      // 4. Set default auth header
       apiClient.defaults.headers.common["Authorization"] =
         `Bearer ${data.accessToken}`;
-
-      return true; // Indicate success
+      console.log("✅ Registration successful:", data.user.email);
+      return true;
     } catch (error) {
       console.error("Registration failed:", error);
-      return false; // Indicate failure
+      return false;
     }
   };
 
@@ -91,19 +89,18 @@ export const AuthProvider = ({ children }) => {
     try {
       const refreshToken = localStorage.getItem("refreshToken");
       if (refreshToken) {
-        // Tell the backend to invalidate this refresh token
         await apiClient.post("/api/auth/logout", { refreshToken });
       }
     } catch (error) {
       console.error("Logout API call failed, logging out locally", error);
     } finally {
-      // Clear everything from state and storage regardless of API call success
       setUser(null);
       setToken(null);
       localStorage.removeItem("refreshToken");
       delete apiClient.defaults.headers.common["Authorization"];
+      console.log("✅ Logged out successfully");
     }
-  }, []); // Empty dependency array means this function is created once
+  }, []);
 
   ///////////////////////////////////////
   // const forgotPassword = async (email) => {
@@ -129,7 +126,7 @@ export const AuthProvider = ({ children }) => {
 
       // ✅ Safely check for success flag or message
       if (response.data?.success || response.data?.message) {
-        console.log("Forgot Password success:", response.data);
+        console.log("✅ Forgot Password success:", response.data);
         return true;
       } else {
         console.warn("Forgot Password unexpected response:", response);
@@ -137,7 +134,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error(
-        "Forgot Password failed:",
+        "❌ Forgot Password failed:",
         error.response?.data || error.message
       );
       return false;
@@ -151,12 +148,13 @@ export const AuthProvider = ({ children }) => {
       });
       return res.status === 200;
     } catch (error) {
-      console.error("Reset password failed", error);
+      console.error("❌ Reset password failed", error);
       return false;
     }
   };
 
   const updateSubscriptionStatus = (isSubscribed) => {
+    console.log("💳 Updating subscription status:", isSubscribed);
     setUser((prevUser) => ({
       ...prevUser,
       isSubscribed: isSubscribed,
@@ -174,6 +172,7 @@ export const AuthProvider = ({ children }) => {
 
         // Check for 401 error and if we haven't already retried
         if (error.response?.status === 401 && !originalRequest._retry) {
+          console.log("⚠️ 401 Unauthorized - Attempting token refresh");
           originalRequest._retry = true; // Mark that we've tried to refresh once
 
           // Prevent multiple refresh calls at the same time
@@ -183,35 +182,33 @@ export const AuthProvider = ({ children }) => {
 
             if (refreshToken) {
               try {
-                // 1. Call the refresh endpoint
+                console.log("🔄 Refreshing token...");
                 const { data } = await apiClient.post("/api/auth/refresh", {
                   refreshToken,
                 });
 
-                // 2. Update state and headers with new accessToken
                 setToken(data.accessToken);
                 setUser(data.user);
                 apiClient.defaults.headers.common["Authorization"] =
                   `Bearer ${data.accessToken}`;
 
-                // 3. Update the original request's header
                 originalRequest.headers["Authorization"] =
                   `Bearer ${data.accessToken}`;
 
                 isRefreshingRef.current = false;
-
+                console.log("✅ Token refreshed successfully");
                 // 4. Retry the original request with the new token
                 return apiClient(originalRequest);
               } catch (refreshError) {
                 console.error(
-                  "Token refresh failed, logging out",
+                  "❌ Token refresh failed, logging out",
                   refreshError
                 );
                 isRefreshingRef.current = false;
                 logout(); // Refresh failed, force logout
               }
             } else {
-              // No refresh token found in storage, force logout
+              console.log("❌ No refresh token found, logging out");
               isRefreshingRef.current = false;
               logout();
             }
@@ -232,31 +229,40 @@ export const AuthProvider = ({ children }) => {
   // ============================================
   useEffect(() => {
     const verifyUser = async () => {
+      console.log("🔍 Verifying user on app load...");
+
       const refreshToken = localStorage.getItem("refreshToken");
       if (refreshToken) {
         // Prevent race condition with interceptor
         if (!isRefreshingRef.current) {
           isRefreshingRef.current = true;
           try {
+            console.log("🔄 Calling refresh endpoint...");
             // Call /refresh to get a new accessToken and user data
             const { data } = await apiClient.post("/api/auth/refresh", {
               refreshToken,
             });
+            console.log("✅ Initial refresh successful:", data.user.email);
             setToken(data.accessToken);
             setUser(data.user);
             apiClient.defaults.headers.common["Authorization"] =
               `Bearer ${data.accessToken}`;
           } catch (error) {
-            console.error("Initial refresh failed, logging out", error);
+            console.error("❌ Initial refresh failed:", error);
             logout(); // Invalid/expired refresh token
           } finally {
             isRefreshingRef.current = false;
+            setIsLoading(false);
           }
         }
       }
-      setIsLoading(false); // Done loading
+      // added only gor console
+      else {
+        console.log("⚠️ No refresh token found in localStorage");
+        setIsLoading(false);
+      } ////////////////////
+      console.log("✅ Auth loading complete - setting isLoading to false");
     };
-
     verifyUser();
   }, []);
 

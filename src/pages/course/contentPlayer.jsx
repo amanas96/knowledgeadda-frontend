@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import apiClient from "../api/axios";
-import { useAuth } from "../context/authContext";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import apiClient from "../../api/axios";
+import { useAuth } from "../../context/authContext";
 import { motion } from "framer-motion";
 import { Lock, PlayCircle, FileText, BookOpen, RefreshCcw } from "lucide-react";
 
@@ -11,20 +11,28 @@ const ContentPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchContent = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const { data } = await apiClient.get(`/api/v1/content/${contentId}`);
+        // ✅ Fixed backend path
+        const { data } = await apiClient.get(
+          `/api/v1/courses/${courseId}/content/${contentId}`
+        );
         setContent(data);
       } catch (err) {
         console.error("Failed to fetch content:", err);
-        if (err.response && err.response.status === 403) {
+
+        // ✅ Handle paywall or auth errors
+        if (err.response?.status === 403) {
           setError(
             "This lesson is for premium members. Unlock it by subscribing below."
           );
+        } else if (err.response?.status === 401) {
+          setError("You need to log in to view this content.");
         } else {
           setError("Failed to load content. Please try again later.");
         }
@@ -32,8 +40,9 @@ const ContentPage = () => {
         setIsLoading(false);
       }
     };
+
     fetchContent();
-  }, [contentId]);
+  }, [courseId, contentId]);
 
   const renderContent = () => {
     if (!content) return null;
@@ -126,9 +135,19 @@ const ContentPage = () => {
         <Lock size={70} className="text-red-400 mb-6" />
         <h1 className="text-2xl font-bold text-red-400 mb-3">{error}</h1>
         <p className="text-gray-400 mb-6 max-w-md">
-          Subscribe to access premium lectures, detailed notes, and quiz
-          sessions designed by top mentors.
+          {error.includes("premium")
+            ? "Subscribe to access premium lectures, detailed notes, and quizzes designed by top mentors."
+            : "Please check your login or try again later."}
         </p>
+
+        {!user && (
+          <button
+            onClick={() => navigate("/login")}
+            className="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-lg font-semibold text-white"
+          >
+            Login
+          </button>
+        )}
 
         {user && !user.isSubscribed && (
           <Link
@@ -165,7 +184,6 @@ const ContentPage = () => {
 
         <div className="mb-10">{renderContent()}</div>
 
-        {/* Content Description Section */}
         {content?.description && (
           <motion.div
             initial={{ opacity: 0 }}

@@ -28,7 +28,7 @@ const Header = () => {
 
         {/* === Desktop Nav Links === */}
         <div className="hidden md:flex space-x-8">
-          {["Home", "Courses", "About", "Contact"].map((item) => (
+          {["Home", "Courses", "Quizzes", "About", "Contact"].map((item) => (
             <Link
               key={item}
               to={`/${item === "Home" ? "" : item.toLowerCase()}`}
@@ -134,16 +134,18 @@ const Header = () => {
             className="md:hidden bg-white border-t border-gray-100 shadow-inner"
           >
             <div className="flex flex-col px-6 py-4 space-y-4">
-              {["Home", "Courses", "About", "Contact"].map((item) => (
-                <Link
-                  key={item}
-                  to={`/${item === "Home" ? "" : item.toLowerCase()}`}
-                  className="text-gray-700 font-medium hover:text-blue-600 transition-colors"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {item}
-                </Link>
-              ))}
+              {["Home", "Courses", "Quizzes", "About", "Contact"].map(
+                (item) => (
+                  <Link
+                    key={item}
+                    to={`/${item === "Home" ? "" : item.toLowerCase()}`}
+                    className="text-gray-700 font-medium hover:text-blue-600 transition-colors"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {item}
+                  </Link>
+                )
+              )}
 
               {isAuthenticated ? (
                 <>

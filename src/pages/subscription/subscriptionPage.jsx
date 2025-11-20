@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import apiClient from "../api/axios";
-import { useAuth } from "../context/authContext";
+import apiClient from "../../api/axios";
+import { useAuth } from "../../context/authContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
-import { CheckCircle2, Star, Crown, BookOpen } from "lucide-react";
+import { CheckCircle, CheckCircle2, Star, Crown, BookOpen } from "lucide-react";
 
 const SubscriptionPage = () => {
   const [plans, setPlans] = useState([]);

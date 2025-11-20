@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { useAuth } from "../context/authContext";
+import { useAuth } from "../../context/authContext";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import AuthLayout from "../components/authLayout";
-import AuthInput from "../components/authInput";
+import AuthLayout from "../../components/authLayout";
+import AuthInput from "../../components/authInput";
 
 const ResetPasswordPage = () => {
   const [password, setPassword] = useState("");

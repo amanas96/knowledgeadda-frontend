@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import apiClient from "../api/axios";
-import CourseCard from "../components/courseComponent";
+import apiClient from "../../api/axios";
+import CourseCard from "../../components/courseComponent";
 import { motion } from "framer-motion";
 
 const CourseLibraryPage = () => {
