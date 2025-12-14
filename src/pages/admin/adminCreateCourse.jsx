@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../../api/axios";
+import CloudinaryUploadWidget from "../../components/cloudinaryUploadWidget";
 
 const AdminCreateCourse = () => {
   const navigate = useNavigate();
@@ -20,12 +21,25 @@ const AdminCreateCourse = () => {
     });
   };
 
+  // --- 2. HANDLE UPLOAD SUCCESS ---
+  const handleUploadSuccess = (result) => {
+    // The widget returns { url, ... }
+    setFormData((prev) => ({
+      ...prev,
+      thumbnailUrl: result.url, // Set the URL from Cloudinary
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.thumbnailUrl) {
+      alert("Please upload a thumbnail image.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
-    // Convert tags string "react, js" to array ["react", "js"]
     const tagsArray = formData.tags
       .split(",")
       .map((tag) => tag.trim())
@@ -37,7 +51,7 @@ const AdminCreateCourse = () => {
         tags: tagsArray,
       });
       alert("Course created successfully!");
-      navigate("/admin/courses"); // Go back to the list
+      navigate("/admin/courses");
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || "Failed to create course.");
@@ -87,21 +101,33 @@ const AdminCreateCourse = () => {
           />
         </div>
 
+        {/* --- 3. REPLACED TEXT INPUT WITH WIDGET --- */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Thumbnail URL
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Course Thumbnail
           </label>
-          <input
-            type="url"
-            name="thumbnailUrl"
-            value={formData.thumbnailUrl}
-            onChange={handleChange}
-            required
-            className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
-            placeholder="https://example.com/image.jpg"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Paste a direct link to an image.
+
+          <div className="flex items-center space-x-4">
+            {/* The Upload Button */}
+            <CloudinaryUploadWidget onUploadSuccess={handleUploadSuccess} />
+
+            {/* The Preview */}
+            {formData.thumbnailUrl ? (
+              <div className="relative w-32 h-20 border rounded overflow-hidden">
+                <img
+                  src={formData.thumbnailUrl}
+                  alt="Thumbnail Preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-32 h-20 border-2 border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 text-xs">
+                No Image
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Upload an image (JPG, PNG) to display on the course card.
           </p>
         </div>
 

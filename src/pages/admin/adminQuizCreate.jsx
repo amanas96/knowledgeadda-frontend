@@ -35,6 +35,7 @@ const AdminQuizCreate = () => {
     optionD: "",
     correctAnswer: "A",
     marks: 1,
+    explanation: "",
   });
 
   const [loadingCourses, setLoadingCourses] = useState(true);
@@ -84,17 +85,22 @@ const AdminQuizCreate = () => {
   // Add question to list
   // --------------------------------------------------------------------
   const addQuestion = () => {
-    const { text, optionA, optionB, optionC, optionD } = questionForm;
+    const { text, optionA, optionB, optionC, optionD, correctAnswer } =
+      questionForm;
 
     if (!text || !optionA || !optionB || !optionC || !optionD) {
       alert("Please fill all question fields.");
       return;
     }
 
+    const options = [optionA, optionB, optionC, optionD];
+
+    const correctAnswerText = options[correctAnswer.charCodeAt(0) - 65];
+
     const newQuestion = {
       text,
       options: [optionA, optionB, optionC, optionD],
-      correctAnswer: questionForm.correctAnswer,
+      correctAnswer: correctAnswerText,
       marks: questionForm.marks,
     };
 
@@ -109,6 +115,7 @@ const AdminQuizCreate = () => {
       optionD: "",
       correctAnswer: "A",
       marks: 1,
+      explanation: "",
     });
   };
 
