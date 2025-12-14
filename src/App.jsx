@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "./components/layout";
+import { useAuth } from "./context/authContext.jsx";
 import HomePage from "./pages/homePage";
 import LoginPage from "./pages/auth/loginPage";
 import RegisterPage from "./pages/auth/registerPage";
@@ -10,7 +11,8 @@ import CourseLibraryPage from "./pages/course/courseLibrary";
 import CourseDetailPage from "./pages/course/courseDetail";
 import SubscriptionPage from "./pages/subscription/subscriptionPage";
 import ContentPage from "./pages/course/contentPlayer";
-import { useAuth } from "./context/authContext";
+import PrivateRoute from "./route/privateRoute.jsx";
+
 import QuizStart from "./pages/quiz/quizStart.jsx";
 import QuizReview from "./pages/quiz/quizReview.jsx";
 import QuizResult from "./pages/quiz/quizResult.jsx";
@@ -22,7 +24,11 @@ import AdminCourseList from "./pages/admin/adminCourseList.jsx";
 import AdminCreateCourse from "./pages/admin/adminCreateCourse.jsx";
 import AdminManageCourse from "./pages/admin/adminManageCourse.jsx";
 import AdminQuizCreate from "./pages/admin/adminQuizCreate.jsx";
-
+import AdminQuizEdit from "./pages/admin/adminQuizEdit.jsx";
+import AdminQuestionEdit from "./pages/admin/adminQuestionEdit.jsx";
+import ProfilePage from "./pages/profilePage.jsx";
+import AboutPage from "./pages/aboutPage.jsx";
+import ContactPage from "./pages/contactPage.jsx";
 function App() {
   const { isLoading } = useAuth();
   if (isLoading) {
@@ -42,15 +48,50 @@ function App() {
         <Route path="register" element={<RegisterPage />} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="about" element={<AboutPage />} />
+        <Route path="contact" element={<ContactPage />} />
+
         {/* --- Course Routes --- */}
         <Route path="courses" element={<CourseLibraryPage />} />
-        <Route path="course/:courseId" element={<CourseDetailPage />} />
-        <Route path="subscribe" element={<SubscriptionPage />} />
+        <Route
+          path="course/:courseId"
+          element={
+            <PrivateRoute>
+              <CourseDetailPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="course/:courseId/content/:contentId"
+          element={
+            <PrivateRoute>
+              <ContentPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="subscribe"
+          element={
+            <PrivateRoute>
+              <SubscriptionPage />
+            </PrivateRoute>
+          }
+        />
         <Route path="content" element={<ContentPage />} />
         <Route path="/quizzes" element={<QuizList />} />
         <Route path="/quiz/:quizId/start" element={<QuizStart />} />
         <Route path="/quiz/:quizId/result" element={<QuizResult />} />
         <Route path="/quiz/:quizId/review" element={<QuizReview />} />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <ProfilePage />
+            </PrivateRoute>
+          }
+        />
       </Route>
 
       {/* --- ADMIN ROUTES (Protected) --- */}
@@ -65,6 +106,14 @@ function App() {
           />
           {/* <Route path="quizzes" element={<AdminQuizList />} /> */}
           <Route path="quizzes/new" element={<AdminQuizCreate />} />
+          {/* EDIT QUIZ */}
+          <Route path="quizzes/:quizId/edit" element={<AdminQuizEdit />} />
+
+          {/* EDIT SINGLE QUESTION */}
+          <Route
+            path="quizzes/:quizId/questions/:questionId/edit"
+            element={<AdminQuestionEdit />}
+          />
         </Route>
       </Route>
     </Routes>

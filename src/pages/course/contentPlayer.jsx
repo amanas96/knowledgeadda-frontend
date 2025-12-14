@@ -4,6 +4,7 @@ import apiClient from "../../api/axios";
 import { useAuth } from "../../context/authContext";
 import { motion } from "framer-motion";
 import { Lock, PlayCircle, FileText, BookOpen, RefreshCcw } from "lucide-react";
+import ReactPlayer from "react-player";
 
 const ContentPage = () => {
   const { courseId, contentId } = useParams();
@@ -47,25 +48,116 @@ const ContentPage = () => {
   const renderContent = () => {
     if (!content) return null;
 
+    console.log("Content Type:", content.contentType);
+    console.log("Content URL:", content.contentUrl);
+    console.log(
+      "ReactPlayer Can Play?:",
+      ReactPlayer.canPlay(content.contentUrl)
+    );
+    ///////////////////// helper for embedding
+    function toEmbedUrl(url) {
+      try {
+        const u = new URL(url);
+        const v = u.searchParams.get("v");
+        const list = u.searchParams.get("list");
+
+        // No video ID = invalid URL
+        if (!v) return null;
+
+        // If YouTube MIX (RDMM...), remove (& YouTube doesn't allow embedding)
+        if (list && list.startsWith("RDMM")) {
+          return `https://www.youtube.com/embed/${v}`;
+        }
+
+        // Playlist embed
+        if (list) {
+          return `https://www.youtube.com/embed/${v}?list=${list}`;
+        }
+
+        // Normal video
+        return `https://www.youtube.com/embed/${v}`;
+      } catch (e) {
+        return null;
+      }
+    }
+
     switch (content.contentType) {
       case "video":
+        const isYouTube =
+          content.contentUrl?.includes("youtube.com") ||
+          content.contentUrl?.includes("youtu.be");
+
+        console.log("Video URL:", content.contentUrl);
+        console.log("Is YouTube:", isYouTube);
+
+        if (isYouTube) {
+          // YouTube handling
+          function cleanYouTubeUrl(url) {
+            try {
+              const u = new URL(url);
+              const videoId = u.searchParams.get("v");
+              if (!videoId) {
+                if (u.hostname === "youtu.be") {
+                  const id = u.pathname.slice(1);
+                  return `https://www.youtube.com/watch?v=${id}`;
+                }
+                return null;
+              }
+              return `https://www.youtube.com/watch?v=${videoId}`;
+            } catch (e) {
+              return null;
+            }
+          }
+
+          const cleanUrl = cleanYouTubeUrl(content.contentUrl);
+
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="w-full max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-lg border border-gray-700"
+            >
+              <div className="relative pb-[56.25%] h-0">
+                <iframe
+                  src={cleanUrl.replace("watch?v=", "embed/")}
+                  className="absolute top-0 left-0 w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title="YouTube Video"
+                />
+              </div>
+            </motion.div>
+          );
+        }
+
+        // Cloudinary/Custom videos - Use HTML5 video tag
         return (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-gray-700"
+            className="w-full max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-lg border border-gray-700 bg-black"
           >
-            <iframe
-              src={content.contentUrl}
-              title={content.title}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="w-full h-full"
-            ></iframe>
+            <video
+              controls
+              className="w-full h-auto"
+              preload="metadata"
+              onError={(e) => {
+                console.error("❌ Video error:", e);
+                console.error("Error target:", e.target);
+                console.error("Error code:", e.target.error?.code);
+                console.error("Error message:", e.target.error?.message);
+              }}
+              onLoadStart={() => console.log("🔄 Video loading...")}
+              onLoadedMetadata={() => console.log("✅ Video metadata loaded")}
+              onCanPlay={() => console.log("✅ Video can play")}
+            >
+              <source src={content.contentUrl} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </motion.div>
         );
-
       case "pdf":
         return (
           <motion.div

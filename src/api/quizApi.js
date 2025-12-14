@@ -44,14 +44,26 @@ export const addQuestionToQuiz = (quizId, questionData) =>
 export const adminGetQuizQuestions = (quizId) =>
   apiClient.get(`/api/v1/quizzes/${quizId}/questions?admin=true`);
 
-// Delete quiz (admin)
+// // Delete quiz (admin)
+// export const deleteQuiz = (quizId) =>
+//   apiClient.delete(`/api/v1/quizzes/${quizId}`);
+
+// // Update quiz (admin)
+// export const updateQuiz = (quizId, data) =>
+//   apiClient.put(`/api/v1/quizzes/${quizId}`, data);
+
+// // Delete a question (admin)
+// export const deleteQuestion = (quizId, questionId) =>
+//   apiClient.delete(`/api/v1/quizzes/${quizId}/questions/${questionId}`);
+
+export const updateQuiz = (quizId, payload) =>
+  apiClient.put(`/api/v1/quizzes/${quizId}`, payload);
+
 export const deleteQuiz = (quizId) =>
   apiClient.delete(`/api/v1/quizzes/${quizId}`);
 
-// Update quiz (admin)
-export const updateQuiz = (quizId, data) =>
-  apiClient.put(`/api/v1/quizzes/${quizId}`, data);
+export const updateQuestion = (quizId, questionId, payload) =>
+  apiClient.put(`/api/v1/quizzes/${quizId}/questions/${questionId}`, payload);
 
-// Delete a question (admin)
 export const deleteQuestion = (quizId, questionId) =>
   apiClient.delete(`/api/v1/quizzes/${quizId}/questions/${questionId}`);

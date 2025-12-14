@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null); // This is the short-lived accessToken
   const [isLoading, setIsLoading] = useState(true);
+  const [backendError, setBackendError] = useState("");
 
   // Ref to prevent multiple concurrent refresh calls
   const isRefreshingRef = useRef(false);
@@ -62,6 +63,8 @@ export const AuthProvider = ({ children }) => {
   // ============================================
   const register = async (name, email, password) => {
     try {
+      setBackendError("");
+
       const { data } = await apiClient.post("/api/auth/register", {
         name,
         email,
@@ -76,7 +79,16 @@ export const AuthProvider = ({ children }) => {
       console.log("✅ Registration successful:", data.user.email);
       return true;
     } catch (error) {
-      console.error("Registration failed:", error);
+      if (error.response) {
+        const msg =
+          error.response.data.message ||
+          error.response.data.errors?.[0]?.msg ||
+          "Something went wrong";
+
+        setBackendError(msg); // ← store error instead of alert
+      } else {
+        setBackendError("Network error");
+      }
       return false;
     }
   };
@@ -253,6 +265,9 @@ export const AuthProvider = ({ children }) => {
           } finally {
             isRefreshingRef.current = false;
             setIsLoading(false);
+            console.log(
+              "✅ Auth loading complete - setting isLoading to false"
+            );
           }
         }
       }
@@ -260,11 +275,10 @@ export const AuthProvider = ({ children }) => {
       else {
         console.log("⚠️ No refresh token found in localStorage");
         setIsLoading(false);
-      } ////////////////////
-      console.log("✅ Auth loading complete - setting isLoading to false");
+      }
     };
     verifyUser();
-  }, []);
+  }, [logout]);
 
   // ============================================
   // CONTEXT VALUE
@@ -276,6 +290,8 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!token,
     login,
     register,
+    backendError,
+    setBackendError,
     logout,
     forgotPassword,
     resetPassword,

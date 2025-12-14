@@ -111,19 +111,6 @@ const CourseDetailPage = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (authLoading) return;
-
-    if (!isAuthenticated) {
-      setError("You must be logged in to view this course.");
-      setPageLoading(false);
-      setCourse(null);
-      setContent([]);
-      return;
-    }
-
-    setError(null);
-    setPageLoading(true);
-
     const fetchCourseData = async () => {
       try {
         const courseRes = await apiClient.get(`/api/v1/courses/${courseId}`);
@@ -145,7 +132,7 @@ const CourseDetailPage = () => {
     };
 
     fetchCourseData();
-  }, [courseId, authLoading, isAuthenticated]);
+  }, [courseId]);
 
   if (authLoading || pageLoading) {
     return (
