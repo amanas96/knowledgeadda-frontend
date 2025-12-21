@@ -120,9 +120,67 @@ const AdminDashboard = () => {
 
         <Link
           to="/admin/quizzes/new"
-          className="px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+          className="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow group"
         >
-          + Create New Quiz
+          <div className="flex items-center">
+            {/* Icon */}
+            <div className="bg-purple-100 p-3 rounded-full text-purple-600 mr-4 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+            </div>
+
+            {/* Text */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800">
+                Create New Quiz
+              </h3>
+              <p className="text-sm text-gray-500">
+                Add a new quiz to any course.
+              </p>
+            </div>
+          </div>
+        </Link>
+
+        <Link
+          to="/admin/contacts"
+          className="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow group"
+        >
+          <div className="flex items-center">
+            <div className="bg-red-100 p-3 rounded-full text-red-600 mr-4 group-hover:bg-red-600 group-hover:text-white transition-colors">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M8 10h.01M12 10h.01M16 10h.01M21 16V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8m18 0a2 2 0 01-2 2H5a2 2 0 01-2-2m18 0v2m-2 0v2m-6-2v2"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800">
+                Contact Messages
+              </h3>
+              <p className="text-sm text-gray-500">
+                View user enquiries & messages.
+              </p>
+            </div>
+          </div>
         </Link>
       </div>
     </div>

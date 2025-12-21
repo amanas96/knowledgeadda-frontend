@@ -29,6 +29,8 @@ import AdminQuestionEdit from "./pages/admin/adminQuestionEdit.jsx";
 import ProfilePage from "./pages/profilePage.jsx";
 import AboutPage from "./pages/aboutPage.jsx";
 import ContactPage from "./pages/contactPage.jsx";
+import AdminContactList from "./pages/admin/adminContactList.jsx";
+
 function App() {
   const { isLoading } = useAuth();
   if (isLoading) {
@@ -114,6 +116,8 @@ function App() {
             path="quizzes/:quizId/questions/:questionId/edit"
             element={<AdminQuestionEdit />}
           />
+
+          <Route path="contacts" element={<AdminContactList />} />
         </Route>
       </Route>
     </Routes>

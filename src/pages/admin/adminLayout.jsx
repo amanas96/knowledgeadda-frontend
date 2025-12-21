@@ -32,6 +32,12 @@ const AdminLayout = () => {
             >
               Users
             </Link>
+            <Link
+              to="/admin/contacts"
+              className="hover:text-blue-400 transition-colors"
+            >
+              Contact Dashboard
+            </Link>
             <Link to="/" className="hover:text-blue-400 transition-colors">
               View Site
             </Link>
