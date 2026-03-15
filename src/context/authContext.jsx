@@ -147,7 +147,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error(
         "❌ Forgot Password failed:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       return false;
     }
@@ -171,6 +171,10 @@ export const AuthProvider = ({ children }) => {
       ...prevUser,
       isSubscribed: isSubscribed,
     }));
+  };
+
+  const updateUser = (userData) => {
+    setUser(userData);
   };
 
   // ============================================
@@ -214,7 +218,7 @@ export const AuthProvider = ({ children }) => {
               } catch (refreshError) {
                 console.error(
                   "❌ Token refresh failed, logging out",
-                  refreshError
+                  refreshError,
                 );
                 isRefreshingRef.current = false;
                 logout(); // Refresh failed, force logout
@@ -227,7 +231,7 @@ export const AuthProvider = ({ children }) => {
           }
         }
         return Promise.reject(error); // Return other errors
-      }
+      },
     );
 
     // Cleanup interceptor on unmount
@@ -266,7 +270,7 @@ export const AuthProvider = ({ children }) => {
             isRefreshingRef.current = false;
             setIsLoading(false);
             console.log(
-              "✅ Auth loading complete - setting isLoading to false"
+              "✅ Auth loading complete - setting isLoading to false",
             );
           }
         }
@@ -296,6 +300,7 @@ export const AuthProvider = ({ children }) => {
     forgotPassword,
     resetPassword,
     updateSubscriptionStatus,
+    updateUser,
   };
 
   return (

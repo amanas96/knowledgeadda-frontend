@@ -11,6 +11,7 @@ const QuizStart = () => {
 
   const [quizTitle, setQuizTitle] = useState("");
   const [questions, setQuestions] = useState([]);
+  const [quizTimeLimit, setQuizTimeLimit] = useState(0);
   const [answers, setAnswers] = useState([]); // [{questionId, userAnswer}]
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -26,6 +27,7 @@ const QuizStart = () => {
         const res = await getQuizQuestions(quizId, token);
         setQuestions(res.data.questions || []);
         setQuizTitle(res.data.quizTitle || "Quiz");
+        setQuizTimeLimit(res.data.timeLimit || 10);
       } catch (err) {
         const message =
           err.response?.data?.message || "Failed to load quiz questions.";
@@ -149,7 +151,9 @@ const QuizStart = () => {
             </p>
           </div>
           {/* Timer – static 10 minutes for now */}
-          <Timer duration={10} onEnd={handleSubmit} />
+          {quizTimeLimit > 0 && (
+            <Timer duration={quizTimeLimit} onEnd={handleSubmit} />
+          )}
         </div>
 
         {/* Questions */}
@@ -157,7 +161,7 @@ const QuizStart = () => {
           {questions.map((q, index) => (
             <div
               key={q._id}
-              className="bg-white/5 rounded-xl p-4 md:p-5 border border-white/10"
+              className="bg-white rounded-2xl p-4 md:p-5 border border-white/10"
             >
               <div className="flex items-start gap-3 mb-3">
                 <span className="flex-shrink-0 mt-1 w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold">
@@ -171,17 +175,17 @@ const QuizStart = () => {
               <div className="space-y-2 mt-2">
                 {q.options.map((opt) => {
                   const selected = answers.find(
-                    (a) => a.questionId === q._id && a.userAnswer === opt
+                    (a) => a.questionId === q._id && a.userAnswer === opt,
                   );
                   return (
                     <label
                       key={opt}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-gray-800 cursor-pointer text-sm md:text-base
-                        ${
-                          selected
-                            ? "bg-blue-600/80 text-white"
-                            : "bg-white/5 text-blue-50 hover:bg-white/10"
-                        }`}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-sm md:text-base transition-all border
+        ${
+          selected
+            ? "bg-blue-600 text-white border-blue-600 shadow-md" // ✅ solid blue when selected
+            : "bg-white text-gray-800 border-gray-200 hover:border-blue-400 hover:bg-blue-50" // ✅ clean unselected
+        }`}
                     >
                       <input
                         type="radio"
@@ -191,11 +195,17 @@ const QuizStart = () => {
                         onChange={() => handleAnswerChange(q._id, opt)}
                         className="hidden"
                       />
-                      <span className="inline-block w-4 h-4 rounded-full border border-gray-500 flex-shrink-0 flex items-center justify-center">
+
+                      {/* Custom radio circle */}
+                      <span
+                        className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all
+        ${selected ? "border-white" : "border-gray-400"}`}
+                      >
                         {selected && (
-                          <span className="w-2 h-2 rounded-full bg-gray-800" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-white" />
                         )}
                       </span>
+
                       <span>{opt}</span>
                     </label>
                   );

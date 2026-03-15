@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-
-import { updateQuestion, deleteQuestion } from "../../api/quizApi";
+import { adminUpdateQuestion, adminDeleteQuestion } from "../../api/adminApi"; // ✅
 import apiClient from "../../api/axios";
 
 const AdminQuestionEdit = () => {
   const { quizId, questionId } = useParams();
   const navigate = useNavigate();
-
   const [loading, setLoading] = useState(true);
-
   const [form, setForm] = useState({
     text: "",
     optionA: "",
@@ -25,16 +22,14 @@ const AdminQuestionEdit = () => {
     const loadQuestion = async () => {
       try {
         const { data } = await apiClient.get(
-          `/api/v1/quizzes/${quizId}/questions`
-        );
-
+          `/api/v1/quizzes/${quizId}/questions`,
+        ); // ✅ student route fine here
         const q = data.find((x) => x._id === questionId);
         if (!q) {
           alert("Question not found");
           navigate(-1);
           return;
         }
-
         setForm({
           text: q.text,
           optionA: q.options[0],
@@ -51,30 +46,24 @@ const AdminQuestionEdit = () => {
         setLoading(false);
       }
     };
-
     loadQuestion();
   }, [quizId, questionId]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-  };
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const saveQuestion = async () => {
     try {
+      const options = [form.optionA, form.optionB, form.optionC, form.optionD];
       const payload = {
         text: form.text,
-        options: [form.optionA, form.optionB, form.optionC, form.optionD],
-        correctAnswer: form[form.correctAnswer],
+        options,
+        correctAnswer:
+          options[["A", "B", "C", "D"].indexOf(form.correctAnswer)],
         marks: form.marks,
         explanation: form.explanation,
       };
-
-      // correctAnswer must be actual string answer
-      payload.correctAnswer =
-        payload.options[["A", "B", "C", "D"].indexOf(form.correctAnswer)];
-
-      await updateQuestion(quizId, questionId, payload);
+      await adminUpdateQuestion(quizId, questionId, payload); // ✅
       alert("Question updated!");
       navigate(`/admin/quizzes/${quizId}/edit`);
     } catch (err) {
@@ -85,10 +74,8 @@ const AdminQuestionEdit = () => {
 
   const handleDelete = async () => {
     if (!window.confirm("Delete question?")) return;
-
     try {
-      await deleteQuestion(quizId, questionId);
-      alert("Deleted");
+      await adminDeleteQuestion(quizId, questionId); // ✅
       navigate(`/admin/quizzes/${quizId}/edit`);
     } catch (err) {
       alert("Failed to delete");
@@ -105,9 +92,7 @@ const AdminQuestionEdit = () => {
       >
         &larr; Back to Quiz
       </Link>
-
       <h1 className="text-3xl font-bold">Edit Question</h1>
-
       <div className="bg-white p-6 shadow rounded border space-y-4">
         <div>
           <label className="font-medium">Question Text</label>
@@ -118,8 +103,6 @@ const AdminQuestionEdit = () => {
             className="w-full border p-2 rounded mt-1"
           />
         </div>
-
-        {/* Options */}
         {["A", "B", "C", "D"].map((opt) => (
           <div key={opt}>
             <label className="font-medium">Option {opt}</label>
@@ -131,8 +114,6 @@ const AdminQuestionEdit = () => {
             />
           </div>
         ))}
-
-        {/* Correct Answer */}
         <div>
           <label className="font-medium">Correct Answer</label>
           <select
@@ -141,13 +122,13 @@ const AdminQuestionEdit = () => {
             onChange={handleChange}
             className="border p-2 rounded mt-1"
           >
-            <option value="A">Option A</option>
-            <option value="B">Option B</option>
-            <option value="C">Option C</option>
-            <option value="D">Option D</option>
+            {["A", "B", "C", "D"].map((o) => (
+              <option key={o} value={o}>
+                Option {o}
+              </option>
+            ))}
           </select>
         </div>
-
         <div>
           <label className="font-medium">Marks</label>
           <input
@@ -158,7 +139,6 @@ const AdminQuestionEdit = () => {
             className="w-full border p-2 rounded mt-1"
           />
         </div>
-
         <div>
           <label className="font-medium">Explanation (optional)</label>
           <textarea
@@ -168,14 +148,12 @@ const AdminQuestionEdit = () => {
             className="w-full border p-2 rounded mt-1"
           />
         </div>
-
         <button
           onClick={saveQuestion}
           className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
         >
           Save Question
         </button>
-
         <button
           onClick={handleDelete}
           className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 ml-4"

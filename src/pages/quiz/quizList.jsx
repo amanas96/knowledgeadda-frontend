@@ -18,8 +18,12 @@ const QuizList = () => {
 
   useEffect(() => {
     const fetchQuizzes = async () => {
-      const { data } = await apiClient.get("/api/v1/quizzes");
-      setQuizzes(data);
+      try {
+        const { data } = await apiClient.get("/api/v1/quizzes");
+        setQuizzes(data);
+      } catch (error) {
+        console.error("Failed to fetch quizzes", error);
+      }
     };
 
     fetchQuizzes();

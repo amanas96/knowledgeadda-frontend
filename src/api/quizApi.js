@@ -1,5 +1,8 @@
 import apiClient from "./axios";
 
+// Get this to your quizApi.js
+export const getQuizById = (quizId) =>
+  apiClient.get(`/api/v1/quizzes/${quizId}`);
 // Get all quizzes for a course
 export const getQuizzesForCourse = (courseId, token) =>
   apiClient.get(`/api/v1/quizzes/course/${courseId}`, {
@@ -17,7 +20,7 @@ export const submitQuiz = (quizId, answers, token) =>
   apiClient.post(
     `/api/v1/quizzes/${quizId}/submit`,
     { answers },
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}` } },
   );
 
 // Review quiz

@@ -1,36 +1,82 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import apiClient from "../../api/axios";
 import { useAuth } from "../../context/authContext";
 import { motion } from "framer-motion";
-import { Lock, PlayCircle, FileText, BookOpen, RefreshCcw } from "lucide-react";
-import ReactPlayer from "react-player";
+import {
+  Lock,
+  PlayCircle,
+  FileText,
+  BookOpen,
+  RefreshCcw,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  FileText as PDFIcon,
+  HelpCircle,
+  CheckCircle,
+  Clock,
+  List,
+} from "lucide-react";
 
 const ContentPage = () => {
   const { courseId, contentId } = useParams();
   const [content, setContent] = useState(null);
+  const [allContent, setAllContent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const videoRef = useRef(null);
+  const watchStartRef = useRef(null);
+  const totalWatchedRef = useRef(0);
+
+  const saveWatchProgress = async (extraSeconds = 0) => {
+    if (!content || content.contentType !== "video") return;
+    const sessionSeconds = watchStartRef.current
+      ? Math.floor((Date.now() - watchStartRef.current) / 1000)
+      : 0;
+    const totalSeconds =
+      totalWatchedRef.current + sessionSeconds + extraSeconds;
+    const watchedMinutes = Math.floor(totalSeconds / 60);
+    if (watchedMinutes < 1) return;
+    try {
+      await apiClient.post("/api/profile/watch-progress", {
+        contentId: content._id,
+        courseId,
+        watchedMinutes,
+      });
+    } catch (err) {
+      console.error("Failed to save watch progress:", err.message);
+    }
+  };
+
   useEffect(() => {
-    const fetchContent = async () => {
+    return () => {
+      saveWatchProgress();
+    };
+  }, [content]);
+
+  // Fetch current content + all course content for sidebar
+  useEffect(() => {
+    const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // ✅ Fixed backend path
-        const { data } = await apiClient.get(
-          `/api/v1/courses/${courseId}/content/${contentId}`
-        );
-        setContent(data);
+        const [contentRes, allContentRes] = await Promise.all([
+          apiClient.get(`/api/v1/courses/${courseId}/content/${contentId}`),
+          apiClient
+            .get(`/api/v1/courses/${courseId}/content`)
+            .catch(() => ({ data: [] })),
+        ]);
+        setContent(contentRes.data);
+        setAllContent(allContentRes.data || []);
       } catch (err) {
-        console.error("Failed to fetch content:", err);
-
-        // ✅ Handle paywall or auth errors
         if (err.response?.status === 403) {
           setError(
-            "This lesson is for premium members. Unlock it by subscribing below."
+            "This lesson is for premium members. Unlock it by subscribing below.",
           );
         } else if (err.response?.status === 401) {
           setError("You need to log in to view this content.");
@@ -41,166 +87,147 @@ const ContentPage = () => {
         setIsLoading(false);
       }
     };
-
-    fetchContent();
+    fetchData();
   }, [courseId, contentId]);
 
-  const renderContent = () => {
-    if (!content) return null;
+  // Current index for prev/next navigation
+  const currentIndex = allContent.findIndex((c) => c._id === contentId);
+  const prevContent = currentIndex > 0 ? allContent[currentIndex - 1] : null;
+  const nextContent =
+    currentIndex < allContent.length - 1 ? allContent[currentIndex + 1] : null;
 
-    console.log("Content Type:", content.contentType);
-    console.log("Content URL:", content.contentUrl);
-    console.log(
-      "ReactPlayer Can Play?:",
-      ReactPlayer.canPlay(content.contentUrl)
-    );
-    ///////////////////// helper for embedding
-    function toEmbedUrl(url) {
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case "video":
+        return <Play size={14} />;
+      case "pdf":
+        return <PDFIcon size={14} />;
+      case "quiz":
+        return <HelpCircle size={14} />;
+      default:
+        return <FileText size={14} />;
+    }
+  };
+
+  const getTypeBg = (type) => {
+    switch (type) {
+      case "video":
+        return "bg-blue-100 text-blue-600";
+      case "pdf":
+        return "bg-green-100 text-green-600";
+      case "quiz":
+        return "bg-purple-100 text-purple-600";
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  };
+
+  const renderVideoPlayer = () => {
+    const isYouTube =
+      content.contentUrl?.includes("youtube.com") ||
+      content.contentUrl?.includes("youtu.be");
+
+    function cleanYouTubeUrl(url) {
       try {
         const u = new URL(url);
-        const v = u.searchParams.get("v");
-        const list = u.searchParams.get("list");
-
-        // No video ID = invalid URL
-        if (!v) return null;
-
-        // If YouTube MIX (RDMM...), remove (& YouTube doesn't allow embedding)
-        if (list && list.startsWith("RDMM")) {
-          return `https://www.youtube.com/embed/${v}`;
+        const videoId = u.searchParams.get("v");
+        if (!videoId && u.hostname === "youtu.be") {
+          return `https://www.youtube.com/watch?v=${u.pathname.slice(1)}`;
         }
-
-        // Playlist embed
-        if (list) {
-          return `https://www.youtube.com/embed/${v}?list=${list}`;
-        }
-
-        // Normal video
-        return `https://www.youtube.com/embed/${v}`;
-      } catch (e) {
+        return videoId ? `https://www.youtube.com/watch?v=${videoId}` : null;
+      } catch {
         return null;
       }
     }
 
+    if (isYouTube) {
+      const cleanUrl = cleanYouTubeUrl(content.contentUrl);
+      return (
+        <div className="relative pb-[56.25%] h-0 bg-black">
+          <iframe
+            src={cleanUrl?.replace("watch?v=", "embed/")}
+            className="absolute top-0 left-0 w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title="YouTube Video"
+            onFocus={() => {
+              watchStartRef.current = Date.now();
+            }}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-black">
+        <video
+          ref={videoRef}
+          controls
+          className="w-full h-auto max-h-[70vh]"
+          preload="metadata"
+          onPlay={() => {
+            watchStartRef.current = Date.now();
+          }}
+          onPause={() => {
+            if (watchStartRef.current) {
+              totalWatchedRef.current += Math.floor(
+                (Date.now() - watchStartRef.current) / 1000,
+              );
+              watchStartRef.current = null;
+            }
+            saveWatchProgress();
+          }}
+          onEnded={() => {
+            if (watchStartRef.current) {
+              totalWatchedRef.current += Math.floor(
+                (Date.now() - watchStartRef.current) / 1000,
+              );
+              watchStartRef.current = null;
+            }
+            saveWatchProgress();
+          }}
+          onError={(e) => console.error("Video error:", e.target.error)}
+        >
+          <source src={content.contentUrl} type="video/mp4" />
+        </video>
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    if (!content) return null;
     switch (content.contentType) {
       case "video":
-        const isYouTube =
-          content.contentUrl?.includes("youtube.com") ||
-          content.contentUrl?.includes("youtu.be");
-
-        console.log("Video URL:", content.contentUrl);
-        console.log("Is YouTube:", isYouTube);
-
-        if (isYouTube) {
-          // YouTube handling
-          function cleanYouTubeUrl(url) {
-            try {
-              const u = new URL(url);
-              const videoId = u.searchParams.get("v");
-              if (!videoId) {
-                if (u.hostname === "youtu.be") {
-                  const id = u.pathname.slice(1);
-                  return `https://www.youtube.com/watch?v=${id}`;
-                }
-                return null;
-              }
-              return `https://www.youtube.com/watch?v=${videoId}`;
-            } catch (e) {
-              return null;
-            }
-          }
-
-          const cleanUrl = cleanYouTubeUrl(content.contentUrl);
-
-          return (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="w-full max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-lg border border-gray-700"
-            >
-              <div className="relative pb-[56.25%] h-0">
-                <iframe
-                  src={cleanUrl.replace("watch?v=", "embed/")}
-                  className="absolute top-0 left-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title="YouTube Video"
-                />
-              </div>
-            </motion.div>
-          );
-        }
-
-        // Cloudinary/Custom videos - Use HTML5 video tag
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="w-full max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-lg border border-gray-700 bg-black"
-          >
-            <video
-              controls
-              className="w-full h-auto"
-              preload="metadata"
-              onError={(e) => {
-                console.error("❌ Video error:", e);
-                console.error("Error target:", e.target);
-                console.error("Error code:", e.target.error?.code);
-                console.error("Error message:", e.target.error?.message);
-              }}
-              onLoadStart={() => console.log("🔄 Video loading...")}
-              onLoadedMetadata={() => console.log("✅ Video metadata loaded")}
-              onCanPlay={() => console.log("✅ Video can play")}
-            >
-              <source src={content.contentUrl} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-          </motion.div>
-        );
+        return renderVideoPlayer();
       case "pdf":
         return (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="w-full h-[80vh] border border-gray-700 rounded-xl overflow-hidden"
-          >
+          <div className="w-full h-[75vh] bg-gray-900">
             <embed
               src={content.contentUrl}
               type="application/pdf"
               className="w-full h-full"
             />
-          </motion.div>
+          </div>
         );
-
       case "quiz":
         return (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-            className="text-center bg-[#0f172a] border border-gray-700 rounded-xl p-10 shadow-lg"
-          >
-            <BookOpen size={50} className="mx-auto text-blue-400 mb-4" />
-            <h2 className="text-2xl font-semibold text-white mb-4">
-              Quiz: {content.title}
-            </h2>
-            <p className="text-gray-400 mb-6 text-lg">
+          <div className="flex flex-col items-center justify-center py-20 px-6 bg-[#0f172a] text-white text-center">
+            <BookOpen size={56} className="text-blue-400 mb-5" />
+            <h2 className="text-2xl font-bold mb-3">Quiz: {content.title}</h2>
+            <p className="text-gray-400 mb-8 max-w-md">
               Test your understanding with a quick knowledge check.
             </p>
             <Link
               to={`/quiz/${content._id}`}
-              className="inline-block bg-gradient-to-r from-blue-500 to-emerald-500 px-8 py-3 rounded-lg text-white font-semibold hover:scale-[1.02] transition-transform"
+              className="bg-gradient-to-r from-blue-500 to-indigo-500 px-8 py-3 rounded-xl text-white font-semibold hover:scale-[1.02] transition-transform shadow-lg"
             >
               Start Quiz
             </Link>
-          </motion.div>
+          </div>
         );
-
       default:
         return (
-          <p className="text-gray-400 text-center">
+          <p className="text-gray-400 text-center py-20">
             ⚠️ Unsupported content type.
           </p>
         );
@@ -209,9 +236,9 @@ const ContentPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-gray-400">
-        <RefreshCcw className="animate-spin mb-3" size={26} />
-        <p className="text-lg">Loading lesson...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-gray-400 gap-3">
+        <RefreshCcw className="animate-spin" size={28} />
+        <p>Loading lesson...</p>
       </div>
     );
   }
@@ -221,30 +248,27 @@ const ContentPage = () => {
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
         className="flex flex-col items-center justify-center min-h-[80vh] text-center px-6"
       >
-        <Lock size={70} className="text-red-400 mb-6" />
+        <Lock size={64} className="text-red-400 mb-5" />
         <h1 className="text-2xl font-bold text-red-400 mb-3">{error}</h1>
-        <p className="text-gray-400 mb-6 max-w-md">
+        <p className="text-gray-400 mb-6 max-w-md text-sm">
           {error.includes("premium")
-            ? "Subscribe to access premium lectures, detailed notes, and quizzes designed by top mentors."
+            ? "Subscribe to access premium lectures, detailed notes, and quizzes."
             : "Please check your login or try again later."}
         </p>
-
         {!user && (
           <button
             onClick={() => navigate("/login")}
-            className="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-lg font-semibold text-white"
+            className="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-xl font-semibold text-white"
           >
             Login
           </button>
         )}
-
         {user && !user.isSubscribed && (
           <Link
             to="/subscribe"
-            className="bg-gradient-to-r from-green-500 to-emerald-600 px-8 py-3 rounded-lg font-semibold text-white hover:scale-[1.03] transition-transform"
+            className="bg-gradient-to-r from-green-500 to-emerald-600 px-8 py-3 rounded-xl font-semibold text-white"
           >
             Subscribe & Unlock All Content
           </Link>
@@ -254,42 +278,177 @@ const ContentPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white px-4 py-8 md:px-12">
-      <div className="mb-6">
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+      {/* ── Top Bar ───────────────────────────────────────────────────── */}
+      <div className="bg-gray-900 border-b border-gray-800 px-4 py-3 flex items-center justify-between flex-shrink-0">
         <Link
           to={`/course/${courseId}`}
-          className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-medium"
         >
-          ← Back to Course
+          <ChevronLeft size={18} /> Back to Course
         </Link>
+        <h1 className="text-sm font-semibold text-white truncate max-w-md hidden md:block">
+          {content?.title}
+        </h1>
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="flex items-center gap-2 text-gray-400 hover:text-white text-sm transition-colors"
+        >
+          <List size={18} />
+          <span className="hidden sm:inline">
+            {sidebarOpen ? "Hide" : "Show"} Playlist
+          </span>
+        </button>
       </div>
 
-      <div className="max-w-5xl mx-auto">
-        <motion.h1
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400"
-        >
-          {content?.title}
-        </motion.h1>
+      {/* ── Main Layout ───────────────────────────────────────────────── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* ── Video + Info ──────────────────────────────────────────── */}
+        <div className="flex-1 flex flex-col overflow-y-auto">
+          {/* Video Player */}
+          <div className="w-full bg-black">{renderContent()}</div>
 
-        <div className="mb-10">{renderContent()}</div>
+          {/* Below Video */}
+          <div className="p-5 md:p-8 space-y-6">
+            {/* Title + type badge */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-xl md:text-2xl font-bold text-white leading-tight">
+                  {content?.title}
+                </h1>
+                <div className="flex items-center gap-3 mt-2">
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${getTypeBg(content?.contentType)}`}
+                  >
+                    {getTypeIcon(content?.contentType)}
+                    {content?.contentType?.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-        {content?.description && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="bg-[#1e293b] p-6 rounded-xl border border-gray-700 shadow-md"
-          >
-            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-              <PlayCircle size={24} className="text-blue-400" /> Lesson Overview
-            </h2>
-            <p className="text-gray-300 leading-relaxed">
-              {content.description}
-            </p>
-          </motion.div>
+            {/* Prev / Next navigation */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() =>
+                  prevContent &&
+                  navigate(`/course/${courseId}/content/${prevContent._id}`)
+                }
+                disabled={!prevContent}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-700 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronLeft size={16} /> Previous
+              </button>
+              <button
+                onClick={() =>
+                  nextContent &&
+                  navigate(`/course/${courseId}/content/${nextContent._id}`)
+                }
+                disabled={!nextContent}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-sm font-semibold text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                Next <ChevronRight size={16} />
+              </button>
+              {nextContent && (
+                <span className="text-xs text-gray-500 truncate hidden md:block">
+                  Up next: {nextContent.title}
+                </span>
+              )}
+            </div>
+
+            {/* Description */}
+            {content?.description && (
+              <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+                <h2 className="text-base font-bold text-white mb-3 flex items-center gap-2">
+                  <PlayCircle size={18} className="text-blue-400" />
+                  Lesson Overview
+                </h2>
+                <p className="text-gray-400 leading-relaxed text-sm">
+                  {content.description}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Sidebar Playlist ──────────────────────────────────────── */}
+        {sidebarOpen && (
+          <div className="w-80 flex-shrink-0 bg-gray-900 border-l border-gray-800 flex flex-col hidden md:flex">
+            {/* Sidebar Header */}
+            <div className="px-4 py-4 border-b border-gray-800 flex-shrink-0">
+              <h3 className="text-sm font-bold text-white">Course Playlist</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {allContent.length} lessons · Lesson {currentIndex + 1} of{" "}
+                {allContent.length}
+              </p>
+              {/* Progress bar */}
+              <div className="w-full bg-gray-800 rounded-full h-1.5 mt-3">
+                <div
+                  className="bg-blue-500 h-1.5 rounded-full transition-all"
+                  style={{
+                    width: `${allContent.length > 0 ? ((currentIndex + 1) / allContent.length) * 100 : 0}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Playlist Items */}
+            <div className="overflow-y-auto flex-1">
+              {allContent.map((item, i) => {
+                const isCurrent = item._id === contentId;
+                const isAccessible = item.isAccessible;
+                return (
+                  <button
+                    key={item._id}
+                    onClick={() => {
+                      if (isAccessible) {
+                        navigate(`/course/${courseId}/content/${item._id}`);
+                      }
+                    }}
+                    className={`w-full flex items-start gap-3 px-4 py-3.5 text-left transition-all border-l-2
+                      ${
+                        isCurrent
+                          ? "bg-blue-600/10 border-blue-500"
+                          : "border-transparent hover:bg-gray-800/50"
+                      }
+                      ${!isAccessible ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+                    `}
+                  >
+                    {/* Index / Playing indicator */}
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold
+                      ${isCurrent ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-400"}`}
+                    >
+                      {isCurrent ? <Play size={10} fill="white" /> : i + 1}
+                    </div>
+
+                    {/* Title + meta */}
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={`text-xs font-semibold leading-snug line-clamp-2
+                        ${isCurrent ? "text-blue-400" : "text-gray-300"}`}
+                      >
+                        {item.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span
+                          className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded ${getTypeBg(item.contentType)}`}
+                        >
+                          {getTypeIcon(item.contentType)}
+                          {item.contentType}
+                        </span>
+                        {!isAccessible && (
+                          <span className="text-xs text-amber-500 flex items-center gap-0.5">
+                            <Lock size={10} /> Premium
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
     </div>
