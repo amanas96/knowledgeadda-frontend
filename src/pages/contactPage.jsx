@@ -21,23 +21,30 @@ const ContactPage = () => {
   };
 
   const handleSubmit = async (e) => {
+    // 1. Prevent the default browser refresh immediately
     e.preventDefault();
+
     setStatus({ loading: true, success: null, error: null });
 
     try {
+      // 2. Make the API call
       await apiClient.post("/api/contact", formData);
+
+      // 3. Handle success
       setStatus({
         loading: false,
         success: "Message sent! We will contact you shortly.",
         error: null,
       });
-      setFormData({ name: "", email: "", subject: "", message: "" }); // Reset form
+      setFormData({ name: "", email: "", subject: "", message: "" });
 
+      // Clear success message after 5 seconds
       setTimeout(() => {
         setStatus((prev) => ({ ...prev, success: null }));
       }, 5000);
     } catch (err) {
-      console.error(err);
+      console.error("Contact Error:", err);
+      // 4. Handle error
       setStatus({
         loading: false,
         success: null,
@@ -55,16 +62,14 @@ const ContactPage = () => {
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        {/* Left Side: Contact Info */}
         <div className="space-y-8">
           <div>
             <h2 className="text-2xl font-semibold mb-4">Contact Information</h2>
             <p className="text-gray-600 mb-6">
-              Have questions about our courses or test series? Fill out the form
-              or reach us directly.
+              Have questions about our courses? Fill out the form or reach us
+              directly.
             </p>
           </div>
-
           <div className="space-y-4">
             <div className="flex items-center text-gray-700">
               <Mail className="w-5 h-5 text-blue-600 mr-3" />
@@ -76,24 +81,23 @@ const ContactPage = () => {
             </div>
             <div className="flex items-center text-gray-700">
               <MapPin className="w-5 h-5 text-blue-600 mr-3" />
-              <span>Tech Hub, Cyber City, Gurugram, India</span>
+              <span>Gurugram, India</span>
             </div>
           </div>
         </div>
 
-        {/* Right Side: Form */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           className="bg-white p-8 rounded-xl shadow-lg border border-gray-100"
         >
           {status.success && (
-            <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-lg">
+            <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-lg border border-green-200">
               {status.success}
             </div>
           )}
           {status.error && (
-            <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg">
+            <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
               {status.error}
             </div>
           )}
@@ -109,11 +113,10 @@ const ContactPage = () => {
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="Your Name"
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email
@@ -124,25 +127,23 @@ const ContactPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="you@example.com"
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Subject (Optional)
+                Subject
               </label>
               <input
                 type="text"
                 name="subject"
                 value={formData.subject}
                 onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Course Inquiry"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="Inquiry"
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Message
@@ -153,11 +154,10 @@ const ContactPage = () => {
                 onChange={handleChange}
                 required
                 rows="4"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="How can we help you?"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="How can we help?"
               />
             </div>
-
             <button
               type="submit"
               disabled={status.loading}

@@ -4,7 +4,7 @@ const API_BASE_URL = "http://localhost:5000";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  eaders: { "Content-Type": "application/json" },
+  headers: { "Content-Type": "application/json" },
 });
 
 // This function lets us set up the interceptors
@@ -19,7 +19,7 @@ export const setupInterceptors = (logout) => {
       }
 
       return Promise.reject(error);
-    }
+    },
   );
 };
 

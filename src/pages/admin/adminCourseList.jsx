@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { adminDeleteCourse } from "../../api/adminApi";
 import apiClient from "../../api/axios";
 
 const AdminCourseList = () => {
@@ -7,10 +8,9 @@ const AdminCourseList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch courses on mount
   const fetchCourses = async () => {
     try {
-      const { data } = await apiClient.get("/api/v1/courses");
+      const { data } = await apiClient.get("/api/v1/courses"); // ✅ public route stays
       setCourses(data);
     } catch (err) {
       setError("Failed to load courses.");
@@ -25,19 +25,18 @@ const AdminCourseList = () => {
 
   const handleDelete = async (courseId) => {
     if (
-      window.confirm(
-        "Are you sure? This will delete the course and ALL its videos, PDFs, and quizzes. This cannot be undone."
+      !window.confirm(
+        "Are you sure? This will delete the course and ALL its videos, PDFs, and quizzes. This cannot be undone.",
       )
-    ) {
-      try {
-        await apiClient.delete(`/api/v1/courses/${courseId}`);
-        // Remove from UI immediately
-        setCourses(courses.filter((c) => c._id !== courseId));
-        alert("Course deleted successfully.");
-      } catch (err) {
-        console.error(err);
-        alert("Failed to delete course.");
-      }
+    )
+      return;
+    try {
+      await adminDeleteCourse(courseId); // ✅ admin API
+      setCourses(courses.filter((c) => c._id !== courseId));
+      alert("Course deleted successfully.");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete course.");
     }
   };
 
@@ -55,7 +54,6 @@ const AdminCourseList = () => {
           + Create New Course
         </Link>
       </div>
-
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full">
           <thead className="bg-gray-50">

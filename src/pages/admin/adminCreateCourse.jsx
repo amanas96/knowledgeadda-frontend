@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import apiClient from "../../api/axios";
+import { adminCreateCourse } from "../../api/adminApi"; // ✅
 import CloudinaryUploadWidget from "../../components/cloudinaryUploadWidget";
 
 const AdminCreateCourse = () => {
@@ -14,21 +14,11 @@ const AdminCreateCourse = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // --- 2. HANDLE UPLOAD SUCCESS ---
-  const handleUploadSuccess = (result) => {
-    // The widget returns { url, ... }
-    setFormData((prev) => ({
-      ...prev,
-      thumbnailUrl: result.url, // Set the URL from Cloudinary
-    }));
-  };
+  const handleUploadSuccess = (result) =>
+    setFormData((prev) => ({ ...prev, thumbnailUrl: result.url }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,20 +26,14 @@ const AdminCreateCourse = () => {
       alert("Please upload a thumbnail image.");
       return;
     }
-
     setIsLoading(true);
     setError(null);
-
     const tagsArray = formData.tags
       .split(",")
-      .map((tag) => tag.trim())
-      .filter((tag) => tag);
-
+      .map((t) => t.trim())
+      .filter(Boolean);
     try {
-      await apiClient.post("/api/v1/courses", {
-        ...formData,
-        tags: tagsArray,
-      });
+      await adminCreateCourse({ ...formData, tags: tagsArray }); // ✅
       alert("Course created successfully!");
       navigate("/admin/courses");
     } catch (err) {
@@ -65,11 +49,9 @@ const AdminCreateCourse = () => {
       <h1 className="text-2xl font-bold mb-6 text-gray-800">
         Create New Course
       </h1>
-
       {error && (
         <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>
       )}
-
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -81,11 +63,10 @@ const AdminCreateCourse = () => {
             value={formData.title}
             onChange={handleChange}
             required
-            className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+            className="w-full p-2 border border-gray-300 rounded"
             placeholder="e.g., Complete MERN Stack Guide"
           />
         </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Description
@@ -96,22 +77,16 @@ const AdminCreateCourse = () => {
             onChange={handleChange}
             required
             rows="4"
-            className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+            className="w-full p-2 border border-gray-300 rounded"
             placeholder="What will students learn?"
           />
         </div>
-
-        {/* --- 3. REPLACED TEXT INPUT WITH WIDGET --- */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Course Thumbnail
           </label>
-
           <div className="flex items-center space-x-4">
-            {/* The Upload Button */}
             <CloudinaryUploadWidget onUploadSuccess={handleUploadSuccess} />
-
-            {/* The Preview */}
             {formData.thumbnailUrl ? (
               <div className="relative w-32 h-20 border rounded overflow-hidden">
                 <img
@@ -126,11 +101,7 @@ const AdminCreateCourse = () => {
               </div>
             )}
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Upload an image (JPG, PNG) to display on the course card.
-          </p>
         </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Tags
@@ -140,11 +111,10 @@ const AdminCreateCourse = () => {
             name="tags"
             value={formData.tags}
             onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+            className="w-full p-2 border border-gray-300 rounded"
             placeholder="react, nodejs, mongodb (comma separated)"
           />
         </div>
-
         <div className="flex justify-end space-x-4 pt-4">
           <button
             type="button"

@@ -1,55 +1,43 @@
 import React, { useEffect, useState } from "react";
-
-import apiClient from "../../api/quizApi";
-import { Link, useNavigate } from "react-router-dom";
+import { getAllQuizzes } from "../../api/quizApi"; // ✅ use this, not apiClient directly
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/authContext";
 
 const QuizList = () => {
   const [quizzes, setQuizzes] = useState([]);
-  const { user, isAuthenticated } = useAuth();
   const [infoMessage, setInfoMessage] = useState("");
-
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  // useEffect(() => {
-  //   if (!isAuthenticated) {
-  //     navigate("/login");
-  //   }
-  // }, [isAuthenticated, navigate]);const navigate = useNavigate();
 
   useEffect(() => {
     const fetchQuizzes = async () => {
-      const { data } = await apiClient.get("/api/v1/quizzes");
-      setQuizzes(data);
+      try {
+        const res = await getAllQuizzes(); // ✅ use the api function
+        setQuizzes(res.data);
+      } catch (error) {
+        console.error("Failed to fetch quizzes", error);
+      }
     };
-
     fetchQuizzes();
   }, []);
 
   const handleQuizClick = (quiz) => {
-    // 1. Not logged in → delay then redirect
+    // 1. Not logged in
     if (!isAuthenticated) {
       setInfoMessage("Please login to attempt quizzes.");
-      setTimeout(() => {
-        navigate("/login", {});
-      }, 2000); // 800ms delay (change as you want)
-
+      setTimeout(() => navigate("/login"), 2000);
       return;
     }
 
-    // 2. Premium quiz but not subscribed
+    // 2. Premium but not subscribed
     if (quiz.isPremium && !user?.isSubscribed) {
       setInfoMessage("Subscribe to unlock premium quizzes.");
-      setTimeout(() => {
-        navigate("/subscribe");
-      }, 1500);
-
+      setTimeout(() => navigate("/subscribe"), 1500);
       return;
     }
 
-    // 3. Free or subscribed quiz → allow
-    setTimeout(() => {
-      navigate(`/quiz/${quiz._id}/start`);
-    }, 400); // shorter delay if you prefer
+    // 3. ✅ Go to detail page first, not start directly
+    navigate(`/quiz/${quiz._id}`);
   };
 
   return (
@@ -57,33 +45,48 @@ const QuizList = () => {
       <h1 className="text-4xl font-bold mb-8">All Quizzes</h1>
 
       {infoMessage && (
-        <div className="mb-6 p-4  text-gray-900 shadow text-center animate-pulse">
+        <div className="mb-6 p-4 text-gray-900 shadow text-center animate-pulse">
           {infoMessage}
         </div>
       )}
 
-      <div className="grid md:grid-cols-3  gap-6">
+      <div className="grid md:grid-cols-3 gap-6">
         {quizzes.map((quiz) => (
           <div
             key={quiz._id}
             onClick={() => handleQuizClick(quiz)}
-            className={`p-6 bg-white/10 border  border-purple-800 rounded-2xl shadow-lg cursor-pointer
-    ${quiz.isPremium && !user?.isSubscribed ? "opacity-60" : "hover:bg-white/20"}
-    transition-all`}
+            className={`p-6 bg-white border border-purple-800 rounded-2xl shadow-lg cursor-pointer
+              ${
+                quiz.isPremium && !user?.isSubscribed
+                  ? "opacity-60"
+                  : "hover:shadow-xl hover:scale-[1.01]"
+              } transition-all`}
           >
             <h2 className="text-xl text-gray-900 font-semibold">
               {quiz.title}
             </h2>
+
             {quiz.category && (
-              <p className="text-sm mt-1 opacity-80">{quiz.category}</p>
+              <p className="text-sm text-gray-500 mt-1">{quiz.category}</p>
             )}
-            {quiz.isPremium ? (
-              !user?.isSubscribed ? (
-                <p className="text-red-600 mt-4">🔒 Premium</p>
-              ) : null
-            ) : (
-              <p className="text-green-400 mt-4">🆓 Free</p>
-            )}
+
+            <div className="mt-4 flex items-center justify-between">
+              {quiz.isPremium ? (
+                <span className="text-red-500 text-sm font-medium">
+                  🔒 Premium
+                </span>
+              ) : (
+                <span className="text-green-500 text-sm font-medium">
+                  🆓 Free
+                </span>
+              )}
+
+              {quiz.totalQuestions && (
+                <span className="text-xs text-gray-400">
+                  {quiz.totalQuestions} questions
+                </span>
+              )}
+            </div>
           </div>
         ))}
       </div>

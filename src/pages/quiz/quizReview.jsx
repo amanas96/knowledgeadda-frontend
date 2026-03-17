@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { reviewQuiz } from "../../api/quizApi";
 import { useAuth } from "../../context/authContext";
 
 const QuizReview = () => {
   const { quizId } = useParams();
   const { token } = useAuth();
+  const navigate = useNavigate();
 
   const [review, setReview] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,12 +15,12 @@ const QuizReview = () => {
   useEffect(() => {
     const fetchReview = async () => {
       try {
-        const res = await reviewQuiz(quizId, token);
+        const res = await reviewQuiz(quizId);
         setReview(res.data);
       } catch (err) {
         setError(
           err.response?.data?.message ||
-            "Failed to load review. Please try again."
+            "Failed to load review. Please try again.",
         );
       } finally {
         setLoading(false);
@@ -122,12 +123,12 @@ const QuizReview = () => {
 
         {/* Button */}
         <div className="flex justify-center mt-10">
-          <Link
-            to="/quizzes"
+          <button
+            onClick={() => navigate("/quizzes", { replace: true })}
             className="px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
           >
             Back to Quizzes
-          </Link>
+          </button>
         </div>
       </div>
     </div>

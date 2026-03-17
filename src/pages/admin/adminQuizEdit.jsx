@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-
 import {
-  updateQuiz,
-  getQuizQuestions,
-  deleteQuiz,
-  deleteQuestion,
-} from "../../api/quizApi";
-
+  adminUpdateQuiz,
+  adminDeleteQuiz,
+  adminDeleteQuestion,
+} from "../../api/adminApi";
 import apiClient from "../../api/axios";
 
 const AdminQuizEdit = () => {
@@ -16,11 +13,9 @@ const AdminQuizEdit = () => {
 
   const [quiz, setQuiz] = useState(null);
   const [questions, setQuestions] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Editable quiz fields
   const [quizForm, setQuizForm] = useState({
     title: "",
     category: "General",
@@ -29,13 +24,11 @@ const AdminQuizEdit = () => {
     isPremium: true,
   });
 
-  // Load quiz details + questions
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
         const { data } = await apiClient.get(`/api/v1/quizzes/${quizId}`);
         setQuiz(data);
-
         setQuizForm({
           title: data.title,
           category: data.category,
@@ -44,7 +37,10 @@ const AdminQuizEdit = () => {
           isPremium: data.isPremium,
         });
 
-        const questionsRes = await getQuizQuestions(quizId);
+        // ✅ use apiClient directly — student read route is fine
+        const questionsRes = await apiClient.get(
+          `/api/v1/quizzes/${quizId}/questions`,
+        );
         setQuestions(questionsRes.data);
       } catch (err) {
         console.error(err);
@@ -56,20 +52,16 @@ const AdminQuizEdit = () => {
     fetchQuiz();
   }, [quizId]);
 
-  // Form Change
   const handleChange = (e) => {
     const { name, type, checked, value } = e.target;
-    setQuizForm({
-      ...quizForm,
-      [name]: type === "checkbox" ? checked : value,
-    });
+    setQuizForm({ ...quizForm, [name]: type === "checkbox" ? checked : value });
   };
 
-  // Save Quiz
+  // ✅ uses adminUpdateQuiz
   const saveQuiz = async () => {
     setSaving(true);
     try {
-      await updateQuiz(quizId, quizForm);
+      await adminUpdateQuiz(quizId, quizForm);
       alert("Quiz updated!");
     } catch (err) {
       console.error(err);
@@ -79,11 +71,11 @@ const AdminQuizEdit = () => {
     }
   };
 
-  // Delete Quiz
+  // ✅ uses adminDeleteQuiz
   const handleDeleteQuiz = async () => {
     if (!window.confirm("Delete entire quiz?")) return;
     try {
-      await deleteQuiz(quizId);
+      await adminDeleteQuiz(quizId);
       alert("Quiz deleted");
       navigate("/admin/courses");
     } catch (err) {
@@ -92,12 +84,11 @@ const AdminQuizEdit = () => {
     }
   };
 
-  // Delete Question
+  // ✅ uses adminDeleteQuestion
   const handleDeleteQuestion = async (questionId) => {
     if (!window.confirm("Delete this question?")) return;
-
     try {
-      await deleteQuestion(quizId, questionId);
+      await adminDeleteQuestion(quizId, questionId);
       setQuestions(questions.filter((q) => q._id !== questionId));
     } catch (err) {
       alert("Failed to delete question");
@@ -117,10 +108,9 @@ const AdminQuizEdit = () => {
 
       <h1 className="text-3xl font-bold text-gray-800">Edit Quiz</h1>
 
-      {/* QUIZ FORM */}
+      {/* Quiz Form */}
       <div className="bg-white p-6 rounded-lg shadow border">
         <h2 className="text-xl font-semibold mb-4">Quiz Details</h2>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="font-medium">Title</label>
@@ -131,7 +121,6 @@ const AdminQuizEdit = () => {
               className="w-full border p-2 rounded mt-1"
             />
           </div>
-
           <div>
             <label className="font-medium">Category</label>
             <select
@@ -140,15 +129,20 @@ const AdminQuizEdit = () => {
               onChange={handleChange}
               className="w-full border p-2 rounded mt-1"
             >
-              <option value="General">General</option>
-              <option value="Polity">Polity</option>
-              <option value="Geography">Geography</option>
-              <option value="Science">Science</option>
-              <option value="Economy">Economy</option>
-              <option value="Other">Other</option>
+              {[
+                "General",
+                "Polity",
+                "Geography",
+                "Science",
+                "Economy",
+                "Other",
+              ].map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
             </select>
           </div>
-
           <div>
             <label className="font-medium">Time Limit (minutes)</label>
             <input
@@ -159,7 +153,6 @@ const AdminQuizEdit = () => {
               className="w-full border p-2 rounded mt-1"
             />
           </div>
-
           <div>
             <label className="font-medium">Total Marks</label>
             <input
@@ -170,7 +163,6 @@ const AdminQuizEdit = () => {
               className="w-full border p-2 rounded mt-1"
             />
           </div>
-
           <div className="flex items-center gap-3 mt-4">
             <input
               type="checkbox"
@@ -181,7 +173,6 @@ const AdminQuizEdit = () => {
             <label>Premium Quiz?</label>
           </div>
         </div>
-
         <button
           onClick={saveQuiz}
           disabled={saving}
@@ -189,7 +180,6 @@ const AdminQuizEdit = () => {
         >
           {saving ? "Saving..." : "Save Quiz"}
         </button>
-
         <button
           onClick={handleDeleteQuiz}
           className="mt-5 ml-4 bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
@@ -198,11 +188,10 @@ const AdminQuizEdit = () => {
         </button>
       </div>
 
-      {/* QUESTIONS LIST */}
+      {/* Questions List */}
       <div className="bg-white rounded-lg shadow border">
         <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
           <h2 className="text-lg font-semibold">Questions</h2>
-
           <Link
             to={`/admin/quizzes/${quizId}/questions/new`}
             className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
@@ -210,17 +199,13 @@ const AdminQuizEdit = () => {
             + Add Question
           </Link>
         </div>
-
         {questions.length === 0 ? (
           <div className="p-6 text-center text-gray-500">No questions yet.</div>
         ) : (
           <ul className="divide-y">
             {questions.map((q) => (
               <li key={q._id} className="p-4 flex justify-between items-center">
-                <div>
-                  <p className="font-semibold">{q.text}</p>
-                </div>
-
+                <p className="font-semibold">{q.text}</p>
                 <div className="flex gap-4">
                   <Link
                     to={`/admin/quizzes/${quizId}/questions/${q._id}/edit`}
@@ -228,7 +213,6 @@ const AdminQuizEdit = () => {
                   >
                     Edit
                   </Link>
-
                   <button
                     onClick={() => handleDeleteQuestion(q._id)}
                     className="text-red-600 hover:underline"
