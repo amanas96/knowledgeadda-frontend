@@ -24,7 +24,7 @@ const QuizStart = () => {
         setLoading(true);
         setError(null);
 
-        const res = await getQuizQuestions(quizId, token);
+        const res = await getQuizQuestions(quizId);
         setQuestions(res.data.questions || []);
         setQuizTitle(res.data.quizTitle || "Quiz");
         setQuizTimeLimit(res.data.timeLimit || 10);
@@ -39,7 +39,7 @@ const QuizStart = () => {
     };
 
     fetchQuestions();
-  }, [quizId, token]);
+  }, [quizId]);
 
   // === Handle selecting an answer ===
   const handleAnswerChange = (questionId, option) => {
@@ -57,9 +57,10 @@ const QuizStart = () => {
       setSubmitLoading(true);
       setError(null);
 
-      const res = await submitQuiz(quizId, answers, token);
+      const res = await submitQuiz(quizId, answers);
       navigate(`/quiz/${quizId}/result`, {
         state: { attempt: res.data.attempt },
+        replace: true,
       });
     } catch (err) {
       const message =
@@ -68,7 +69,7 @@ const QuizStart = () => {
     } finally {
       setSubmitLoading(false);
     }
-  }, [quizId, answers, token, navigate, submitLoading]);
+  }, [quizId, answers, navigate, submitLoading]);
 
   // === PREMIUM LOCK UI ===
   if (error === "This quiz is premium. Subscribe to unlock.") {

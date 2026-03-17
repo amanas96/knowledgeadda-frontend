@@ -1,69 +1,46 @@
 import apiClient from "./axios";
 
-// Get this to your quizApi.js
+// ── Public ──────────────────────────────────────────────────
+
+export const getAllQuizzes = (limit = 6) =>
+  apiClient.get(`/api/v1/quizzes?limit=${limit}`);
+
 export const getQuizById = (quizId) =>
   apiClient.get(`/api/v1/quizzes/${quizId}`);
-// Get all quizzes for a course
-export const getQuizzesForCourse = (courseId, token) =>
-  apiClient.get(`/api/v1/quizzes/course/${courseId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-export const getAllQuizzes = () => apiClient.get("/api/v1/quizzes");
-// Get quiz questions
-export const getQuizQuestions = (quizId, token) =>
-  apiClient.get(`/api/v1/quizzes/${quizId}/questions`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
 
-// Submit quiz
-export const submitQuiz = (quizId, answers, token) =>
-  apiClient.post(
-    `/api/v1/quizzes/${quizId}/submit`,
-    { answers },
-    { headers: { Authorization: `Bearer ${token}` } },
-  );
+export const getQuizzesForCourse = (courseId) =>
+  apiClient.get(`/api/v1/quizzes/course/${courseId}`);
 
-// Review quiz
-export const reviewQuiz = (quizId, token) =>
-  apiClient.get(`/api/v1/quizzes/${quizId}/review`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+// ── Protected (token auto-attached by apiClient) ─────────────
 
-export default apiClient;
+export const getQuizQuestions = (quizId) =>
+  apiClient.get(`/api/v1/quizzes/${quizId}/questions`);
 
-/* -------------------------------------------------------------
-   ADMIN QUIZ APIS
-------------------------------------------------------------- */
+export const getQuizAttemptStatus = (quizId) =>
+  apiClient.get(`/api/v1/quizzes/${quizId}/attempt-status`);
 
-// Create quiz (admin)
+export const submitQuiz = (quizId, answers, timeTaken = 0) =>
+  apiClient.post(`/api/v1/quizzes/${quizId}/submit`, { answers, timeTaken });
+
+export const reviewQuiz = (quizId) =>
+  apiClient.get(`/api/v1/quizzes/${quizId}/review`);
+
+// ── Admin ────────────────────────────────────────────────────
+
 export const createQuiz = (quizData) =>
   apiClient.post(`/api/v1/quizzes`, quizData);
-
-// Add question to quiz (admin)
-export const addQuestionToQuiz = (quizId, questionData) =>
-  apiClient.post(`/api/v1/quizzes/${quizId}/questions`, questionData);
-
-// Get questions WITH correct answers (for admin)
-export const adminGetQuizQuestions = (quizId) =>
-  apiClient.get(`/api/v1/quizzes/${quizId}/questions?admin=true`);
-
-// // Delete quiz (admin)
-// export const deleteQuiz = (quizId) =>
-//   apiClient.delete(`/api/v1/quizzes/${quizId}`);
-
-// // Update quiz (admin)
-// export const updateQuiz = (quizId, data) =>
-//   apiClient.put(`/api/v1/quizzes/${quizId}`, data);
-
-// // Delete a question (admin)
-// export const deleteQuestion = (quizId, questionId) =>
-//   apiClient.delete(`/api/v1/quizzes/${quizId}/questions/${questionId}`);
 
 export const updateQuiz = (quizId, payload) =>
   apiClient.put(`/api/v1/quizzes/${quizId}`, payload);
 
 export const deleteQuiz = (quizId) =>
   apiClient.delete(`/api/v1/quizzes/${quizId}`);
+
+export const addQuestionToQuiz = (quizId, questionData) =>
+  apiClient.post(`/api/v1/quizzes/${quizId}/questions`, questionData);
+
+export const adminGetQuizQuestions = (quizId) =>
+  apiClient.get(`/api/v1/quizzes/${quizId}/questions?admin=true`);
 
 export const updateQuestion = (quizId, questionId, payload) =>
   apiClient.put(`/api/v1/quizzes/${quizId}/questions/${questionId}`, payload);

@@ -8,7 +8,6 @@ const QuizResult = () => {
 
   const attempt = state?.attempt;
 
-  // If page was refreshed; no data → redirect to quizzes
   if (!attempt) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
@@ -26,7 +25,10 @@ const QuizResult = () => {
     );
   }
 
-  const { score, totalQuestions, percentage } = attempt;
+  const { score, totalQuestions, percentage, answers = [] } = attempt;
+
+  // ✅ Safe percentage display whether it's a number or string
+  const displayPercentage = Number(percentage).toFixed(1);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 text-white px-4 py-10">
@@ -47,7 +49,7 @@ const QuizResult = () => {
               out of {totalQuestions}
             </span>
             <span className="mt-2 text-xl font-semibold">
-              {percentage.toFixed(1)}%
+              {displayPercentage}%
             </span>
           </div>
         </div>
@@ -57,14 +59,14 @@ const QuizResult = () => {
           <div className="bg-white/10 rounded-xl p-5 border border-white/20">
             <h3 className="text-lg font-semibold mb-1">Correct</h3>
             <p className="text-2xl font-bold text-green-300">
-              {attempt.answers.filter((a) => a.isCorrect).length}
+              {answers.filter((a) => a.isCorrect).length}
             </p>
           </div>
 
           <div className="bg-white/10 rounded-xl p-5 border border-white/20">
             <h3 className="text-lg font-semibold mb-1">Incorrect</h3>
             <p className="text-2xl font-bold text-red-300">
-              {attempt.answers.filter((a) => !a.isCorrect).length}
+              {answers.filter((a) => !a.isCorrect).length}
             </p>
           </div>
         </div>
@@ -78,12 +80,13 @@ const QuizResult = () => {
             Review Answers
           </button>
 
-          <Link
-            to="/quizzes"
-            className="px-6 py-3 bg-white text-blue-600 rounded-xl shadow-lg hover:shadow-xl font-semibold transition-all text-center"
+          {/* ✅ replace: true clears quiz history stack */}
+          <button
+            onClick={() => navigate("/quizzes", { replace: true })}
+            className="px-6 py-3 bg-white text-blue-600 rounded-xl shadow-lg hover:shadow-xl font-semibold transition-all"
           >
             Back to Quizzes
-          </Link>
+          </button>
         </div>
       </div>
     </div>
