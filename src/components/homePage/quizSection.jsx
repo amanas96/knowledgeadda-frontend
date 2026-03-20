@@ -106,6 +106,7 @@ const QuizSection = () => {
     const fetchQuizzes = async () => {
       try {
         const { data } = await getAllQuizzes();
+        console.log(data);
         setQuizzes(data.slice(0, 6));
       } catch (error) {
         console.error("Failed to fetch quizzes", error);
@@ -143,7 +144,7 @@ const QuizSection = () => {
                 <QuizCard
                   key={quiz._id}
                   quiz={quiz}
-                  onClick={() => navigate(`/quiz/${quiz._id}`)}
+                  onClick={() => navigate(`/quiz/${quiz.slug || quiz._id}`)}
                 />
               ))}
         </div>

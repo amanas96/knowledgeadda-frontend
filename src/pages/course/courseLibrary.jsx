@@ -15,6 +15,7 @@ const CourseLibraryPage = () => {
         setError(null);
 
         const { data } = await apiClient.get("/api/v1/courses");
+
         setCourses(data);
       } catch (err) {
         console.error("Failed to fetch courses:", err);

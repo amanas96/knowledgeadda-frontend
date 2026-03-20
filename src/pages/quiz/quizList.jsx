@@ -37,7 +37,7 @@ const QuizList = () => {
     }
 
     // 3. ✅ Go to detail page first, not start directly
-    navigate(`/quiz/${quiz._id}`);
+    navigate(`/quiz/${quiz.slug || quiz._id}`);
   };
 
   return (

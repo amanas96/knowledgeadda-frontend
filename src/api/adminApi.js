@@ -5,8 +5,8 @@ export const getAnalytics = () => apiClient.get("/api/admin/analytics");
 
 // Tickets
 export const adminGetAllTickets = () => apiClient.get("/api/admin/tickets");
-export const adminReplyToTicket = (id, message) =>
-  apiClient.post(`/api/admin/tickets/reply/${id}`, { message });
+export const adminReplyToTicket = (ticketId, text) =>
+  apiClient.post(`/api/admin/tickets/reply/${ticketId}`, { text });
 export const adminCloseTicket = (id) =>
   apiClient.put(`/api/admin/tickets/close/${id}`);
 

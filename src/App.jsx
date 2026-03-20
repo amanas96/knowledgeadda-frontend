@@ -48,6 +48,7 @@ import AdminContactList from "./pages/admin/adminContactList.jsx";
 import AdminTicketConversation from "./pages/admin/adminConatctConversation.jsx";
 import AdminAnalytics from "./pages/admin/adminAnalytics.jsx";
 import PrivateRoute from "./route/privateRoute.jsx";
+import QuizLayout from "./components/quizLayout.jsx";
 
 function App() {
   const { isLoading } = useAuth();
@@ -107,48 +108,6 @@ function App() {
         />
 
         {/* ---------------------------------------------------
-                           QUIZ ROUTES 
-        ---------------------------------------------------- */}
-
-        <Route path="quizzes" element={<QuizList />} />
-
-        <Route
-          path="quiz/:quizId"
-          element={
-            <PrivateRoute>
-              <QuizDetail />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="quiz/:quizId/start"
-          element={
-            <PrivateRoute>
-              <QuizStart />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="quiz/:quizId/result"
-          element={
-            <PrivateRoute>
-              <QuizResult />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="quiz/:quizId/review"
-          element={
-            <PrivateRoute>
-              <QuizReview />
-            </PrivateRoute>
-          }
-        />
-
-        {/* ---------------------------------------------------
                            USER ROUTES (Protected)
         ---------------------------------------------------- */}
         <Route
@@ -184,6 +143,52 @@ function App() {
           element={
             <PrivateRoute>
               <UserTicketConversation />
+            </PrivateRoute>
+          }
+        />
+      </Route>
+
+      {/* ---------------------------------------------------
+                           QUIZ ROUTES 
+        ---------------------------------------------------- */}
+
+      <Route element={<QuizLayout />}>
+        <Route
+          path="quiz/:slug/start"
+          element={
+            <PrivateRoute>
+              <QuizStart />
+            </PrivateRoute>
+          }
+        />
+      </Route>
+
+      <Route path="/" element={<Layout />}>
+        <Route path="quizzes" element={<QuizList />} />
+
+        <Route
+          path="quiz/:slug"
+          element={
+            <PrivateRoute>
+              <QuizDetail />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="quiz/:slug/result"
+          element={
+            <PrivateRoute>
+              <QuizResult />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="quiz/:slug/review"
+          element={
+            <PrivateRoute>
+              <QuizReview />
             </PrivateRoute>
           }
         />
