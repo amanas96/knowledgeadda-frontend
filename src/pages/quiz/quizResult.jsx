@@ -4,9 +4,10 @@ import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 const QuizResult = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { quizId } = useParams();
+  const { slug } = useParams();
 
   const attempt = state?.attempt;
+  const quizTitle = state?.quizTitle;
 
   if (!attempt) {
     return (
@@ -25,7 +26,7 @@ const QuizResult = () => {
     );
   }
 
-  const { score, totalQuestions, percentage, answers = [] } = attempt;
+  const { score, totalQuestions, percentage, answers = [], isRetry } = attempt;
 
   // ✅ Safe percentage display whether it's a number or string
   const displayPercentage = Number(percentage).toFixed(1);
@@ -35,11 +36,19 @@ const QuizResult = () => {
       <div className="max-w-3xl mx-auto bg-white/10 backdrop-blur-xl p-6 md:p-10 rounded-2xl shadow-2xl">
         {/* Title */}
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-4">
-          🎉 Quiz Completed!
+          🎉 {quizTitle || "Quiz Completed!"}
         </h1>
         <p className="text-center text-blue-100 mb-8">
           You have successfully completed this quiz.
         </p>
+
+        {isRetry && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-6 text-center">
+            <p className="text-sm text-amber-700 font-medium">
+              ⚠️ This was a retry — score was <strong>not saved</strong>
+            </p>
+          </div>
+        )}
 
         {/* Score Card */}
         <div className="flex justify-center mb-10">
@@ -74,7 +83,7 @@ const QuizResult = () => {
         {/* Buttons */}
         <div className="flex flex-col md:flex-row justify-center gap-4">
           <button
-            onClick={() => navigate(`/quiz/${quizId}/review`)}
+            onClick={() => navigate(`/quiz/${slug}/review`)}
             className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg hover:shadow-xl font-semibold transition-all text-white"
           >
             Review Answers

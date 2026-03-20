@@ -1,15 +1,15 @@
 import React from "react";
-import { Outlet } from "react-router-dom"; // Outlet is the placeholder for your pages
+import { Outlet } from "react-router-dom";
 import Header from "./header";
 
 const Layout = () => {
   return (
-    <div>
-      <Header />
-      <main className="p-4 pt-25">
-        <Outlet /> {/* Your pages will be rendered here */}
+    <div className="flex flex-col min-h-screen">
+      <Header /> {/* fixed, takes no space */}
+      <main className="flex-1 mt-16 px-4 py-6">
+        {/* mt-16 = header height (64px) */}
+        <Outlet />
       </main>
-      {/* You can add a <Footer /> component here later */}
     </div>
   );
 };

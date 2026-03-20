@@ -6,13 +6,14 @@ import { motion } from "framer-motion";
  * A modern, animated, reusable course card.
  */
 const CourseCard = ({ course }) => {
+  const getCourseLink = (course) => course.slug || course._id;
   return (
     <motion.div
       whileHover={{ y: -6, scale: 1.02 }}
       transition={{ duration: 0.25 }}
     >
       <Link
-        to={`/course/${course._id}`}
+        to={`/course/${getCourseLink(course)}`}
         className="block bg-white/80 backdrop-blur-md border border-gray-200 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 group"
       >
         {/* Image Section */}
