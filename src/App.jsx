@@ -10,8 +10,9 @@ import LoginPage from "./pages/auth/loginPage";
 import RegisterPage from "./pages/auth/registerPage";
 import ForgotPasswordPage from "./pages/auth/forgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/resetPasswordPage";
-import AboutPage from "./pages/aboutPage.jsx";
-import ContactPage from "./pages/contactPage.jsx";
+import AboutPage from "./pages/company/aboutPage.jsx";
+import ContactPage from "./pages/company/contactPage.jsx";
+import ScrollToTop from "./components/ScrollToTop.jsx";
 
 /* --- Courses --- */
 import CourseLibraryPage from "./pages/course/courseLibrary";
@@ -25,9 +26,10 @@ import QuizDetail from "./pages/quiz/quizDetail.jsx";
 import QuizStart from "./pages/quiz/quizStart.jsx";
 import QuizReview from "./pages/quiz/quizReview.jsx";
 import QuizResult from "./pages/quiz/quizResult.jsx";
+import GlobalLeaderboard from "./pages/quiz/globalLeaderboard.jsx";
 
 /* --- User Pages --- */
-import ProfilePage from "./pages/profilePage.jsx";
+import ProfilePage from "./pages/profile/index.jsx";
 
 /* --- Support Ticket System (User) --- */
 import UserTicketList from "./pages/user/userTicketList.jsx";
@@ -49,6 +51,9 @@ import AdminTicketConversation from "./pages/admin/adminConatctConversation.jsx"
 import AdminAnalytics from "./pages/admin/adminAnalytics.jsx";
 import PrivateRoute from "./route/privateRoute.jsx";
 import QuizLayout from "./components/quizLayout.jsx";
+import PrivacyPolicy from "./pages/legal/privacyPolicy.jsx";
+import TermsOfService from "./pages/legal/TermsOfService.jsx";
+import CookiePolicy from "./pages/legal/CookiePolicy.jsx";
 
 function App() {
   const { isLoading } = useAuth();
@@ -62,164 +67,176 @@ function App() {
   }
 
   return (
-    <Routes>
-      {/* ---------------------------------------------------
+    <>
+      {" "}
+      <ScrollToTop />
+      <Routes>
+        {/* ---------------------------------------------------
                      PUBLIC ROUTES
       ---------------------------------------------------- */}
-      <Route path="/" element={<Layout />}>
-        <Route index element={<HomePage />} />
-        <Route path="login" element={<LoginPage />} />
-        <Route path="register" element={<RegisterPage />} />
-        <Route path="forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="reset-password/:token" element={<ResetPasswordPage />} />
-        <Route path="about" element={<AboutPage />} />
-        <Route path="contact" element={<ContactPage />} />
+        <Route path="/" element={<Layout />}>
+          <Route index element={<HomePage />} />
+          <Route path="login" element={<LoginPage />} />
+          <Route path="register" element={<RegisterPage />} />
+          <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="reset-password/:token" element={<ResetPasswordPage />} />
+          <Route path="about" element={<AboutPage />} />
+          <Route path="contact" element={<ContactPage />} />
 
-        {/* ---------------------------------------------------
+          {/* ---------------------------------------------------
                            COURSE ROUTES (Public + Protected) 
         ---------------------------------------------------- */}
-        <Route path="courses" element={<CourseLibraryPage />} />
+          <Route path="courses" element={<CourseLibraryPage />} />
 
-        <Route
-          path="course/:courseId"
-          element={
-            <PrivateRoute>
-              <CourseDetailPage />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="course/:courseId"
+            element={
+              <PrivateRoute>
+                <CourseDetailPage />
+              </PrivateRoute>
+            }
+          />
 
-        <Route
-          path="course/:courseId/content/:contentId"
-          element={
-            <PrivateRoute>
-              <ContentPage />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="course/:courseId/content/:contentId"
+            element={
+              <PrivateRoute>
+                <ContentPage />
+              </PrivateRoute>
+            }
+          />
 
-        <Route
-          path="subscribe"
-          element={
-            <PrivateRoute>
-              <SubscriptionPage />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="subscribe"
+            element={
+              <PrivateRoute>
+                <SubscriptionPage />
+              </PrivateRoute>
+            }
+          />
 
-        {/* ---------------------------------------------------
+          {/* ---------------------------------------------------
                            USER ROUTES (Protected)
         ---------------------------------------------------- */}
-        <Route
-          path="profile"
-          element={
-            <PrivateRoute>
-              <ProfilePage />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="profile"
+            element={
+              <PrivateRoute>
+                <ProfilePage />
+              </PrivateRoute>
+            }
+          />
 
-        {/* ---------------------------------------------------
+          {/* ---------------------------------------------------
                        SUPPORT TICKET SYSTEM (USER)
         ---------------------------------------------------- */}
-        <Route
-          path="support"
-          element={
-            <PrivateRoute>
-              <UserTicketList />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="support/new"
-          element={
-            <PrivateRoute>
-              <CreateTicket />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="support/ticket/:id"
-          element={
-            <PrivateRoute>
-              <UserTicketConversation />
-            </PrivateRoute>
-          }
-        />
-      </Route>
+          <Route
+            path="support"
+            element={
+              <PrivateRoute>
+                <UserTicketList />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="support/new"
+            element={
+              <PrivateRoute>
+                <CreateTicket />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="support/ticket/:id"
+            element={
+              <PrivateRoute>
+                <UserTicketConversation />
+              </PrivateRoute>
+            }
+          />
+        </Route>
 
-      {/* ---------------------------------------------------
+        {/* ---------------------------------------------------
                            QUIZ ROUTES 
         ---------------------------------------------------- */}
 
-      <Route element={<QuizLayout />}>
-        <Route
-          path="quiz/:slug/start"
-          element={
-            <PrivateRoute>
-              <QuizStart />
-            </PrivateRoute>
-          }
-        />
-      </Route>
+        <Route element={<QuizLayout />}>
+          <Route
+            path="quiz/:slug/start"
+            element={
+              <PrivateRoute>
+                <QuizStart />
+              </PrivateRoute>
+            }
+          />
+        </Route>
 
-      <Route path="/" element={<Layout />}>
-        <Route path="quizzes" element={<QuizList />} />
+        <Route path="/" element={<Layout />}>
+          <Route path="quizzes" element={<QuizList />} />
 
-        <Route
-          path="quiz/:slug"
-          element={
-            <PrivateRoute>
-              <QuizDetail />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="quiz/:slug"
+            element={
+              <PrivateRoute>
+                <QuizDetail />
+              </PrivateRoute>
+            }
+          />
 
-        <Route
-          path="quiz/:slug/result"
-          element={
-            <PrivateRoute>
-              <QuizResult />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="quiz/:slug/result"
+            element={
+              <PrivateRoute>
+                <QuizResult />
+              </PrivateRoute>
+            }
+          />
 
-        <Route
-          path="quiz/:slug/review"
-          element={
-            <PrivateRoute>
-              <QuizReview />
-            </PrivateRoute>
-          }
-        />
-      </Route>
+          <Route
+            path="quiz/:slug/review"
+            element={
+              <PrivateRoute>
+                <QuizReview />
+              </PrivateRoute>
+            }
+          />
+        </Route>
+        <Route path="leaderboard" element={<GlobalLeaderboard />} />
 
-      {/* ---------------------------------------------------
+        {/* ---------------------------------------------------
                      ADMIN ROUTES (Protected)
       ---------------------------------------------------- */}
-      <Route element={<AdminRoute />}>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="courses" element={<AdminCourseList />} />
-          <Route path="courses/new" element={<AdminCreateCourse />} />
-          <Route
-            path="courses/:courseId/manage"
-            element={<AdminManageCourse />}
-          />
-          <Route path="quizzes/new" element={<AdminQuizCreate />} />
-          <Route path="quizzes/:quizId/edit" element={<AdminQuizEdit />} />
-          <Route
-            path="quizzes/:quizId/questions/:questionId/edit"
-            element={<AdminQuestionEdit />}
-          />
-          <Route path="analytics" element={<AdminAnalytics />} />
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="courses" element={<AdminCourseList />} />
+            <Route path="courses/new" element={<AdminCreateCourse />} />
+            <Route
+              path="courses/:courseId/manage"
+              element={<AdminManageCourse />}
+            />
+            <Route path="quizzes/new" element={<AdminQuizCreate />} />
+            <Route path="quizzes/:quizId/edit" element={<AdminQuizEdit />} />
+            <Route
+              path="quizzes/:quizId/questions/:questionId/edit"
+              element={<AdminQuestionEdit />}
+            />
+            <Route path="analytics" element={<AdminAnalytics />} />
 
-          {/* Admin Support Ticket Inbox */}
-          <Route path="contacts" element={<AdminContactList />} />
-          <Route path="tickets/:id" element={<AdminTicketConversation />} />
+            {/* Admin Support Ticket Inbox */}
+            <Route path="contacts" element={<AdminContactList />} />
+            <Route path="tickets/:id" element={<AdminTicketConversation />} />
+          </Route>
         </Route>
-      </Route>
-    </Routes>
+        {/* ---------------------------------------------------
+                     Footer Routes 
+      ---------------------------------------------------- */}
+        <Route path="privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="terms-of-service" element={<TermsOfService />} />
+        <Route path="cookie-policy" element={<CookiePolicy />} />
+        <Route path="contact" element={<ContactPage />} />
+      </Routes>
+    </>
   );
 }
 

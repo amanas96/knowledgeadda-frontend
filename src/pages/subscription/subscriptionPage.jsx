@@ -40,13 +40,18 @@ const SubscriptionPage = () => {
   const handleSubscribe = async (planId) => {
     setIsProcessing(planId);
     setError(null);
+
+    if (user?.role === "admin") {
+      toast.info("Admins do not need to subscribe.");
+      return;
+    }
     try {
       const { data } = await apiClient.post(
         "/api/v1/subscriptions/mock-verify",
         {
           planId,
           mockPaymentId: `mock_pay_${Date.now()}`,
-        }
+        },
       );
 
       if (data.subscription?.status === "active") {
@@ -190,15 +195,26 @@ const SubscriptionPage = () => {
 
               <button
                 onClick={() => handleSubscribe(plan._id)}
-                disabled={isProcessing === plan._id}
+                disabled={isProcessing === plan._id || user?.isAdmin}
                 className={`w-full py-3 rounded-lg font-semibold text-white text-lg transition-all duration-300 ${
-                  isProcessing === plan._id
+                  isProcessing === plan._id || user?.isAdmin
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-gradient-to-r from-blue-500 to-emerald-500 hover:shadow-lg hover:scale-[1.02]"
                 }`}
               >
-                {isProcessing === plan._id ? "Processing..." : "Subscribe Now"}
+                {isProcessing === plan._id
+                  ? "Processing..."
+                  : user?.isAdmin
+                    ? "Admin Access"
+                    : "Subscribe Now"}
               </button>
+              {/* Show a helpful message only to admins */}
+              {user?.isAdmin && (
+                <p className="mt-3 text-xs text-amber-400 text-center font-medium">
+                  Note: Admins have full access and cannot purchase
+                  subscriptions.
+                </p>
+              )}
 
               <div className="mt-6 text-sm text-gray-400 text-center">
                 <BookOpen className="inline mr-1 text-blue-400" size={16} />

@@ -56,6 +56,9 @@ const QuizCard = ({ quiz, onClick }) => {
           >
             {quiz.category}
           </span>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 capitalize">
+            {quiz.quizType?.replace("_", " ") || "Standalone"}
+          </span>
           {quiz.isPremium && (
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 flex items-center gap-1">
               <Star size={10} fill="currentColor" /> Premium
@@ -106,7 +109,7 @@ const QuizSection = () => {
     const fetchQuizzes = async () => {
       try {
         const { data } = await getAllQuizzes();
-        console.log(data);
+
         setQuizzes(data.slice(0, 6));
       } catch (error) {
         console.error("Failed to fetch quizzes", error);

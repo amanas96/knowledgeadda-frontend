@@ -3,6 +3,11 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import apiClient from "../../api/axios";
 import { useAuth } from "../../context/authContext";
 import {
+  enrollInCourse,
+  unenrollFromCourse,
+  getEnrollmentStatus,
+} from "../../api/enrollmentApi";
+import {
   Play,
   FileText,
   HelpCircle,
@@ -15,7 +20,8 @@ import {
   BookOpen,
   Zap,
   ChevronRight,
-  ArrowRight,
+  BookmarkPlus,
+  BookmarkCheck,
   Award,
 } from "lucide-react";
 
@@ -31,37 +37,43 @@ const typeConfig = {
     color: "bg-green-50 text-green-600",
     badge: "bg-green-100 text-green-700",
   },
-  quiz: {
-    icon: HelpCircle,
-    color: "bg-purple-50 text-purple-600",
-    badge: "bg-purple-100 text-purple-700",
+  resource: {
+    icon: FileText,
+    color: "bg-gray-50 text-gray-600",
+    badge: "bg-gray-100 text-gray-700",
   },
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 const CourseDetailPage = () => {
-  const { courseId } = useParams();
+  const { courseId } = useParams(); // slug or _id
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [course, setCourse] = useState(null);
   const [content, setContent] = useState([]);
+  const [groupedContent, setGroupedContent] = useState({});
   const [quizzes, setQuizzes] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("content");
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollLoading, setEnrollLoading] = useState(false);
 
   useEffect(() => {
     const fetchCourseData = async () => {
       try {
-        const [courseRes, contentRes, quizRes] = await Promise.all([
+        const [courseRes, contentRes, quizRes, enrollRes] = await Promise.all([
           apiClient.get(`/api/v1/courses/${courseId}`),
           apiClient.get(`/api/v1/courses/${courseId}/content`),
           apiClient.get(`/api/v1/quizzes/course/${courseId}`),
+          getEnrollmentStatus(courseId),
         ]);
         setCourse(courseRes.data);
-        setContent(contentRes.data);
+        setContent(contentRes.data.items || []);
+        setGroupedContent(contentRes.data.grouped || {}); // ✅ grouped object
         setQuizzes(quizRes.data || []);
+        setIsEnrolled(enrollRes.data.isEnrolled);
       } catch (err) {
         setError(
           err.response?.status === 401
@@ -75,6 +87,23 @@ const CourseDetailPage = () => {
     fetchCourseData();
   }, [courseId]);
 
+  const handleEnrollToggle = async () => {
+    setEnrollLoading(true);
+    try {
+      if (isEnrolled) {
+        await unenrollFromCourse(courseId);
+        setIsEnrolled(false);
+      } else {
+        await enrollInCourse(courseId);
+        setIsEnrolled(true);
+      }
+    } catch (err) {
+      console.error("Enrollment error:", err);
+    } finally {
+      setEnrollLoading(false);
+    }
+  };
+
   if (authLoading || pageLoading)
     return <LoadingScreen message="Loading course..." />;
   if (error)
@@ -86,15 +115,20 @@ const CourseDetailPage = () => {
       />
     );
 
-  const showSubscribeButton = isAuthenticated && user && !user.isSubscribed;
+  const showSubscribeButton =
+    isAuthenticated && user && !user.isSubscribed && !user.isAdmin;
   const accessibleCount = content.filter((item) => item.isAccessible).length;
   const totalCount = content.length;
-  const videoCount = content.filter((c) => c.contentType === "video").length;
-  const pdfCount = content.filter((c) => c.contentType === "pdf").length;
+  const videoCount = content.filter((c) => c.video?.url).length;
+  const pdfCount = content.reduce(
+    (acc, c) =>
+      acc + (c.attachments?.filter((a) => a.type === "pdf").length || 0),
+    0,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* ── 1. Hero Section (Full Width) ────────────────────────────── */}
+      {/* ── 1. Hero Section ─────────────────────────────────────────── */}
       <div className="bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 text-white">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <button
@@ -131,10 +165,10 @@ const CourseDetailPage = () => {
         </div>
       </div>
 
-      {/* ── 2. Main Content Grid (Left-Right Layout) ────────────────── */}
+      {/* ── 2. Main Content Grid ─────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-6 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* ── LEFT COLUMN (7/12) ── */}
+          {/* ── LEFT COLUMN (7/12) ───────────────────────────────────── */}
           <div className="lg:col-span-7 space-y-6">
             {/* Tabs */}
             <div className="flex gap-1 bg-white rounded-xl border border-gray-200 shadow-sm p-1 w-fit">
@@ -156,7 +190,7 @@ const CourseDetailPage = () => {
               ))}
             </div>
 
-            {/* List View */}
+            {/* Content List */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/30">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -165,11 +199,32 @@ const CourseDetailPage = () => {
                     : "Practice Assessments"}
                 </h2>
               </div>
+
               <div className="divide-y divide-gray-100">
                 {activeTab === "content" ? (
                   content.length > 0 ? (
-                    content.map((item, i) => (
-                      <ContentItem key={item._id} item={item} index={i} />
+                    // ✅ grouped by section
+                    Object.entries(groupedContent).map(([section, items]) => (
+                      <div key={section}>
+                        {/* Section Header */}
+                        <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 sticky top-0 z-10">
+                          <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wide flex items-center justify-between">
+                            {section}
+                            <span className="text-xs font-normal text-gray-400 normal-case">
+                              {items.length} lesson{items.length > 1 ? "s" : ""}
+                            </span>
+                          </h3>
+                        </div>
+                        {/* Items */}
+                        {items.map((item, i) => (
+                          <ContentItem
+                            key={item._id}
+                            item={item}
+                            index={i}
+                            courseSlug={courseId} // ✅ pass slug
+                          />
+                        ))}
+                      </div>
                     ))
                   ) : (
                     <EmptyState icon={BookOpen} title="No lessons yet" />
@@ -185,9 +240,9 @@ const CourseDetailPage = () => {
             </div>
           </div>
 
-          {/* ── RIGHT COLUMN: Sidebar (5/12) ── */}
-          <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
-            {/* Thumbnail & Quick Stats */}
+          {/* ── RIGHT COLUMN: Sidebar (5/12) ─────────────────────────── */}
+          <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24 lg:self-start">
+            {/* Thumbnail & Stats */}
             <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-200">
               <img
                 src={course?.thumbnailUrl}
@@ -203,6 +258,29 @@ const CourseDetailPage = () => {
                 <SidebarStat icon={FileText} label="PDFs" value={pdfCount} />
               </div>
             </div>
+
+            {/* ✅ Enroll Button — in sidebar */}
+            <button
+              onClick={handleEnrollToggle}
+              disabled={enrollLoading}
+              className={`w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                isEnrolled
+                  ? "bg-green-50 text-green-700 border-2 border-green-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                  : "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200"
+              }`}
+            >
+              {enrollLoading ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : isEnrolled ? (
+                <>
+                  <BookmarkCheck size={18} /> Enrolled
+                </>
+              ) : (
+                <>
+                  <BookmarkPlus size={18} /> Enroll for Free
+                </>
+              )}
+            </button>
 
             {/* Premium Upsell Card */}
             {showSubscribeButton && (
@@ -249,7 +327,7 @@ const CourseDetailPage = () => {
               <div className="space-y-4">
                 <HighlightRow
                   icon={Users}
-                  text={`${accessibleCount} active learners`}
+                  text={`${accessibleCount} accessible lessons`}
                 />
                 <HighlightRow icon={Zap} text="Updated for 2026 Curriculum" />
                 <HighlightRow icon={Award} text="Includes Final Assessment" />
@@ -264,11 +342,14 @@ const CourseDetailPage = () => {
 
 // ─── Sub-Components ──────────────────────────────────────────────────────────
 
-const ContentItem = ({ item, index }) => {
+const ContentItem = ({ item, index, courseSlug }) => {
   const [showToast, setShowToast] = React.useState(false);
-  const config = typeConfig[item.contentType] || typeConfig.pdf;
+
+  // ✅ detect type from new structure
+  const hasVideo = !!item.video?.url;
+  const config = hasVideo ? typeConfig.video : typeConfig.pdf;
   const Icon = config.icon;
-  const linkTo = `/course/${item.course}/content/${item._id}`;
+  const linkTo = `/course/${courseSlug}/content/${item._id}`; // ✅ use slug
 
   const handleLockedClick = (e) => {
     e.preventDefault();
@@ -281,7 +362,11 @@ const ContentItem = ({ item, index }) => {
       <Link
         to={item.isAccessible ? linkTo : "#"}
         onClick={!item.isAccessible ? handleLockedClick : undefined}
-        className={`flex items-center gap-4 px-6 py-5 transition-all group ${item.isAccessible ? "hover:bg-blue-50/50 cursor-pointer" : "cursor-not-allowed"}`}
+        className={`flex items-center gap-4 px-6 py-5 transition-all group ${
+          item.isAccessible
+            ? "hover:bg-blue-50/50 cursor-pointer"
+            : "cursor-not-allowed"
+        }`}
       >
         <span className="text-sm font-bold text-gray-300 w-6 flex-shrink-0 text-center">
           {String(index + 1).padStart(2, "0")}
@@ -293,15 +378,25 @@ const ContentItem = ({ item, index }) => {
         </div>
         <div className="flex-1 min-w-0">
           <p
-            className={`text-sm font-semibold truncate ${item.isAccessible ? "text-gray-800" : "text-gray-400"}`}
+            className={`text-sm font-semibold truncate ${
+              item.isAccessible ? "text-gray-800" : "text-gray-400"
+            }`}
           >
             {item.title}
           </p>
-          <span
-            className={`text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded-md mt-1 inline-block ${config.badge}`}
-          >
-            {item.contentType}
-          </span>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {item.section && item.section !== "General" && (
+              <span className="text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded-md bg-gray-100 text-gray-500">
+                {item.section}
+              </span>
+            )}
+            {item.attachments?.length > 0 && (
+              <span className="text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded-md bg-green-100 text-green-700">
+                {item.attachments.length} resource
+                {item.attachments.length > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
         </div>
         <div>
           {item.isAccessible ? (

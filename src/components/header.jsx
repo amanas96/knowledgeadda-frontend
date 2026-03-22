@@ -13,6 +13,7 @@ import {
   Mail,
   ShoppingBag,
   LogOut,
+  Trophy,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -104,6 +105,13 @@ const Header = () => {
           >
             Contact
           </button>
+          <Link
+            to="/leaderboard"
+            className="dropdown-item"
+            onClick={() => setIsProfileDropdownOpen(false)}
+          >
+            <Trophy size={16} /> Leaderboard
+          </Link>
 
           {/* AUTH */}
           {!isAuthenticated ? (
@@ -170,11 +178,11 @@ const Header = () => {
                       </Link>
 
                       <Link
-                        to="/profile"
+                        to="/profile#courses"
                         className="dropdown-item"
                         onClick={() => setIsProfileDropdownOpen(false)}
                       >
-                        <ShoppingBag size={16} /> My Purchases
+                        <ShoppingBag size={16} /> My Courses
                       </Link>
 
                       <button className="dropdown-item text-left">

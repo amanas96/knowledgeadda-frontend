@@ -2,11 +2,14 @@ import React, { useEffect, useState } from "react";
 import { getAllQuizzes } from "../../api/quizApi"; // ✅ use this, not apiClient directly
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/authContext";
+import { Trophy } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const QuizList = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [infoMessage, setInfoMessage] = useState("");
   const { user, isAuthenticated } = useAuth();
+  const [filter, setFilter] = useState("all");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,6 +23,9 @@ const QuizList = () => {
     };
     fetchQuizzes();
   }, []);
+
+  const filteredQuizzes =
+    filter === "all" ? quizzes : quizzes.filter((q) => q.quizType === filter);
 
   const handleQuizClick = (quiz) => {
     // 1. Not logged in
@@ -42,8 +48,30 @@ const QuizList = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-indigo-50 text-gray-800 p-8">
-      <h1 className="text-4xl font-bold mb-8">All Quizzes</h1>
-
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-4xl font-bold mb-8">All Quizzes</h1>
+        <Link
+          to="/leaderboard"
+          className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-5 py-2.5 rounded-xl font-bold text-sm transition-all"
+        >
+          <Trophy size={16} /> Global Leaderboard
+        </Link>
+        <div className="flex gap-2 mb-6">
+          {["all", "standalone", "course", "daily", "mock_test"].map((type) => (
+            <button
+              key={type}
+              onClick={() => setFilter(type)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-all ${
+                filter === type
+                  ? "bg-blue-600 text-white"
+                  : "bg-white border border-gray-200 text-gray-600 hover:border-blue-400"
+              }`}
+            >
+              {type === "all" ? "All" : type.replace("_", " ")}
+            </button>
+          ))}
+        </div>
+      </div>
       {infoMessage && (
         <div className="mb-6 p-4 text-gray-900 shadow text-center animate-pulse">
           {infoMessage}
@@ -51,7 +79,7 @@ const QuizList = () => {
       )}
 
       <div className="grid md:grid-cols-3 gap-6">
-        {quizzes.map((quiz) => (
+        {filteredQuizzes.map((quiz) => (
           <div
             key={quiz._id}
             onClick={() => handleQuizClick(quiz)}

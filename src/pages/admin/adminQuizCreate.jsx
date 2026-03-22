@@ -37,16 +37,17 @@ const JSON_EXAMPLE = `[
     "text": "What is the capital of India?",
     "options": ["Mumbai", "Delhi", "Chennai", "Kolkata"],
     "correctAnswer": "Delhi",
-    "marks": 1
+    "marks": 1,
+    "explanation": "Delhi is the capital and largest city of India."
   },
   {
     "text": "Who wrote the Indian Constitution?",
     "options": ["Nehru", "Gandhi", "Ambedkar", "Patel"],
     "correctAnswer": "Ambedkar",
-    "marks": 1
+    "marks": 1,
+    "explanation": "Dr. B.R. Ambedkar was the chief architect of the Indian Constitution."
   }
 ]`;
-
 // ─── Small reusable components ────────────────────────────────────────────────
 const Label = ({ children, required }) => (
   <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -101,6 +102,7 @@ const AdminQuizCreate = () => {
     courseId: preSelectedCourseId || "",
     category: "General",
     customCategory: "",
+    quizType: "standalone",
     timeLimit: "",
     totalMarks: "",
     isPremium: false,
@@ -130,7 +132,7 @@ const AdminQuizCreate = () => {
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [slugEdited, setSlugEdited] = useState(false); // track if admin manually edited slug
+  const [slugEdited, setSlugEdited] = useState(false);
 
   // ── Load courses ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -289,7 +291,9 @@ const AdminQuizCreate = () => {
   const handleSubmitQuiz = async () => {
     if (!quizData.title.trim()) return alert("Quiz title is required.");
     if (!quizData.slug.trim()) return alert("Quiz slug is required.");
-    if (!quizData.courseId) return alert("Please select a course.");
+    if (quizData.quizType === "course" && !quizData.courseId) {
+      return alert("Please select a course.");
+    }
     if (quizData.category === "Other" && !quizData.customCategory.trim()) {
       return alert("Please enter a custom category.");
     }
@@ -306,6 +310,8 @@ const AdminQuizCreate = () => {
         customCategory:
           quizData.category === "Other" ? quizData.customCategory : null,
         timeLimit: Number(quizData.timeLimit) || 0,
+        courseId: quizData.quizType === "course" ? quizData.courseId : null,
+        quizType: quizData.quizType,
         totalMarks: Number(quizData.totalMarks) || 0,
         isPremium: quizData.isPremium,
         allowMultipleAttempts: quizData.allowMultipleAttempts,
@@ -329,280 +335,129 @@ const AdminQuizCreate = () => {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 pb-4 space-y-6">
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div>
-          <Link
-            to="/admin/courses"
-            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-4"
-          >
-            <ArrowLeft size={15} /> Back to Courses
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Create New Quiz</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Fill in quiz details, add questions, then publish.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Create New Quiz{" "}
+            <span className="text-sm font-normal text-gray-400">
+              (Fill in quiz details, add questions, then publish.)
+            </span>
+          </h1>
         </div>
 
         {/* ── Quiz Details ────────────────────────────────────────────────── */}
-        <SectionCard title="Quiz Details" icon={BookOpen}>
-          {loadingCourses ? (
-            <div className="flex items-center gap-2 text-gray-400">
-              <Loader2 size={16} className="animate-spin" /> Loading courses...
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Title */}
-              <div className="md:col-span-2">
-                <Label required>Quiz Title</Label>
-                <Input
-                  name="title"
-                  value={quizData.title}
-                  onChange={handleQuizChange}
-                  placeholder="e.g. Indian Polity Basics"
-                />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6  items-start">
+          <SectionCard title="Quiz Details" icon={BookOpen}>
+            {loadingCourses ? (
+              <div className="flex items-center gap-2 text-gray-400">
+                <Loader2 size={16} className="animate-spin" /> Loading
+                courses...
               </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Title */}
+                <div className="md:col-span-2">
+                  <Label required>Quiz Title</Label>
+                  <Input
+                    name="title"
+                    value={quizData.title}
+                    onChange={handleQuizChange}
+                    placeholder="e.g. Indian Polity Basics"
+                  />
+                </div>
 
-              {/* Slug */}
-              <div className="md:col-span-2">
-                <Label required>
-                  Slug
-                  <span className="text-xs font-normal text-gray-400 ml-2">
-                    (SEO-friendly URL identifier)
-                  </span>
-                </Label>
-                <Input
-                  name="slug"
-                  value={quizData.slug}
-                  onChange={handleQuizChange}
-                  placeholder="e.g. indian-polity-basics"
-                />
-                {quizData.slug && (
-                  <p className="text-xs text-gray-400 mt-1.5">
-                    URL preview:{" "}
-                    <span className="text-blue-500 font-medium">
-                      /quiz/{quizData.slug}
+                {/* Slug */}
+                <div className="md:col-span-2">
+                  <Label required>
+                    Slug
+                    <span className="text-xs font-normal text-gray-400 ml-2">
+                      (SEO-friendly URL identifier)
                     </span>
-                  </p>
-                )}
-              </div>
+                  </Label>
+                  <Input
+                    name="slug"
+                    value={quizData.slug}
+                    onChange={handleQuizChange}
+                    placeholder="e.g. indian-polity-basics"
+                  />
+                  {quizData.slug && (
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      URL preview:{" "}
+                      <span className="text-blue-500 font-medium">
+                        /quiz/{quizData.slug}
+                      </span>
+                    </p>
+                  )}
+                </div>
 
-              {/* Description */}
-              <div className="md:col-span-2">
-                <Label>Description</Label>
-                <textarea
-                  name="description"
-                  value={quizData.description}
-                  onChange={handleQuizChange}
-                  rows={3}
-                  placeholder="Brief description of this quiz..."
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm
+                {/* Description */}
+                <div className="md:col-span-2">
+                  <Label>Description</Label>
+                  <textarea
+                    name="description"
+                    value={quizData.description}
+                    onChange={handleQuizChange}
+                    rows={3}
+                    placeholder="Brief description of this quiz..."
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm
                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                     bg-white transition-all resize-none"
-                />
-              </div>
-
-              {/* Course */}
-              <div>
-                <Label required>Course</Label>
-                <div className="relative">
-                  <Select
-                    name="courseId"
-                    value={quizData.courseId}
-                    onChange={handleQuizChange}
-                  >
-                    <option value="">Select a course</option>
-                    {courses.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.title}
-                      </option>
-                    ))}
-                  </Select>
-                  <ChevronDown
-                    size={14}
-                    className="absolute right-3 top-3.5 text-gray-400 pointer-events-none"
                   />
                 </div>
-              </div>
-
-              {/* Category */}
-              <div>
-                <Label>Category</Label>
-                <div className="relative">
-                  <Select
-                    name="category"
-                    value={quizData.category}
-                    onChange={handleQuizChange}
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </Select>
-                  <ChevronDown
-                    size={14}
-                    className="absolute right-3 top-3.5 text-gray-400 pointer-events-none"
-                  />
-                </div>
-              </div>
-
-              {/* Custom Category — only when Other */}
-              {quizData.category === "Other" && (
-                <div className="md:col-span-2">
-                  <Label required>Custom Category</Label>
-                  <Input
-                    name="customCategory"
-                    value={quizData.customCategory}
-                    onChange={handleQuizChange}
-                    placeholder="e.g. Art, Music, Sports..."
-                  />
-                </div>
-              )}
-
-              {/* Time Limit */}
-              <div>
-                <Label>Time Limit (minutes)</Label>
-                <Input
-                  type="number"
-                  name="timeLimit"
-                  value={quizData.timeLimit}
-                  onChange={handleQuizChange}
-                  placeholder="0 = no limit"
-                  min={0}
-                />
-              </div>
-
-              {/* Total Marks */}
-              <div>
-                <Label>Total Marks</Label>
-                <Input
-                  type="number"
-                  name="totalMarks"
-                  value={quizData.totalMarks}
-                  onChange={handleQuizChange}
-                  placeholder="e.g. 10"
-                  min={0}
-                />
-              </div>
-
-              {/* Toggles */}
-              <div className="md:col-span-2 flex flex-wrap gap-6 pt-2">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      name="isPremium"
-                      checked={quizData.isPremium}
-                      onChange={handleQuizChange}
-                      className="sr-only"
-                    />
-                    <div
-                      className={`w-10 h-6 rounded-full transition-colors ${quizData.isPremium ? "bg-amber-400" : "bg-gray-200"}`}
-                    >
-                      <div
-                        className={`w-4 h-4 bg-white rounded-full shadow absolute top-1 transition-transform ${quizData.isPremium ? "translate-x-5" : "translate-x-1"}`}
-                      />
-                    </div>
-                  </div>
-                  <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
-                    <Star size={14} className="text-amber-400" /> Premium Quiz
-                  </span>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      name="allowMultipleAttempts"
-                      checked={quizData.allowMultipleAttempts}
-                      onChange={handleQuizChange}
-                      className="sr-only"
-                    />
-                    <div
-                      className={`w-10 h-6 rounded-full transition-colors ${quizData.allowMultipleAttempts ? "bg-green-400" : "bg-gray-200"}`}
-                    >
-                      <div
-                        className={`w-4 h-4 bg-white rounded-full shadow absolute top-1 transition-transform ${quizData.allowMultipleAttempts ? "translate-x-5" : "translate-x-1"}`}
-                      />
-                    </div>
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Allow Multiple Attempts
-                  </span>
-                </label>
-              </div>
-            </div>
-          )}
-        </SectionCard>
-
-        {/* ── Add Questions ────────────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          {/* Tab Header */}
-          <div className="flex border-b border-gray-100">
-            <button
-              onClick={() => setActiveTab("manual")}
-              className={`flex items-center gap-2 px-6 py-3.5 text-sm font-semibold transition-colors
-                ${
-                  activeTab === "manual"
-                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-            >
-              <PenLine size={15} /> Add Manually
-            </button>
-            <button
-              onClick={() => setActiveTab("json")}
-              className={`flex items-center gap-2 px-6 py-3.5 text-sm font-semibold transition-colors
-                ${
-                  activeTab === "json"
-                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-            >
-              <FileJson size={15} /> Paste JSON
-            </button>
-          </div>
-
-          {/* Manual Tab */}
-          {activeTab === "manual" && (
-            <div className="p-6 space-y-4">
-              <div>
-                <Label required>Question</Label>
-                <Input
-                  name="text"
-                  value={questionForm.text}
-                  onChange={handleQuestionChange}
-                  placeholder="Enter your question here..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {["A", "B", "C", "D"].map((opt) => (
-                  <div key={opt}>
-                    <Label>Option {opt}</Label>
-                    <Input
-                      name={`option${opt}`}
-                      value={questionForm[`option${opt}`]}
-                      onChange={handleQuestionChange}
-                      placeholder={`Option ${opt}`}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label>Correct Answer</Label>
+                  <label className="block text-sm font-medium mb-1">
+                    Quiz Type
+                  </label>
+                  <select
+                    name="quizType"
+                    value={quizData.quizType}
+                    onChange={handleQuizChange}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="standalone">Standalone</option>
+                    <option value="course">Course Quiz</option>
+                    <option value="daily">Daily Quiz</option>
+                    <option value="mock_test">Mock Test</option>
+                  </select>
+                </div>
+                {/* Course */}
+                {quizData.quizType === "course" && (
+                  <div>
+                    <Label required>Course</Label>
+                    <div className="relative">
+                      <Select
+                        name="courseId"
+                        value={quizData.courseId}
+                        onChange={handleQuizChange}
+                      >
+                        <option value="">Select a course</option>
+                        {courses.map((c) => (
+                          <option key={c._id} value={c._id}>
+                            {c.title}
+                          </option>
+                        ))}
+                      </Select>
+                      <ChevronDown
+                        size={14}
+                        className="absolute right-3 top-3.5 text-gray-400 pointer-events-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Category */}
+                <div>
+                  <Label>Category</Label>
                   <div className="relative">
                     <Select
-                      name="correctAnswer"
-                      value={questionForm.correctAnswer}
-                      onChange={handleQuestionChange}
+                      name="category"
+                      value={quizData.category}
+                      onChange={handleQuizChange}
                     >
-                      {["A", "B", "C", "D"].map((o) => (
-                        <option key={o} value={o}>
-                          Option {o}
+                      {CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
                         </option>
                       ))}
                     </Select>
@@ -612,173 +467,347 @@ const AdminQuizCreate = () => {
                     />
                   </div>
                 </div>
+
+                {/* Custom Category — only when Other */}
+                {quizData.category === "Other" && (
+                  <div className="md:col-span-2">
+                    <Label required>Custom Category</Label>
+                    <Input
+                      name="customCategory"
+                      value={quizData.customCategory}
+                      onChange={handleQuizChange}
+                      placeholder="e.g. Art, Music, Sports..."
+                    />
+                  </div>
+                )}
+
+                {/* Time Limit */}
                 <div>
-                  <Label>Marks</Label>
+                  <Label>Time Limit (minutes)</Label>
                   <Input
                     type="number"
-                    name="marks"
-                    value={questionForm.marks}
-                    onChange={handleQuestionChange}
-                    min={1}
+                    name="timeLimit"
+                    value={quizData.timeLimit}
+                    onChange={handleQuizChange}
+                    placeholder="0 = no limit"
+                    min={0}
                   />
                 </div>
+
+                {/* Total Marks */}
                 <div>
-                  <Label>Explanation (optional)</Label>
+                  <Label>Total Marks</Label>
                   <Input
-                    name="explanation"
-                    value={questionForm.explanation}
-                    onChange={handleQuestionChange}
-                    placeholder="Why is this correct?"
+                    type="number"
+                    name="totalMarks"
+                    value={quizData.totalMarks}
+                    onChange={handleQuizChange}
+                    placeholder="e.g. 10"
+                    min={0}
                   />
+                </div>
+
+                {/* Toggles */}
+                <div className="md:col-span-2 flex flex-wrap gap-6 pt-2">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        name="isPremium"
+                        checked={quizData.isPremium}
+                        onChange={handleQuizChange}
+                        className="sr-only"
+                      />
+                      <div
+                        className={`w-10 h-6 rounded-full transition-colors ${quizData.isPremium ? "bg-amber-400" : "bg-gray-200"}`}
+                      >
+                        <div
+                          className={`w-4 h-4 bg-white rounded-full shadow absolute top-1 transition-transform ${quizData.isPremium ? "translate-x-5" : "translate-x-1"}`}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                      <Star size={14} className="text-amber-400" /> Premium Quiz
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        name="allowMultipleAttempts"
+                        checked={quizData.allowMultipleAttempts}
+                        onChange={handleQuizChange}
+                        className="sr-only"
+                      />
+                      <div
+                        className={`w-10 h-6 rounded-full transition-colors ${quizData.allowMultipleAttempts ? "bg-green-400" : "bg-gray-200"}`}
+                      >
+                        <div
+                          className={`w-4 h-4 bg-white rounded-full shadow absolute top-1 transition-transform ${quizData.allowMultipleAttempts ? "translate-x-5" : "translate-x-1"}`}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">
+                      Allow Multiple Attempts
+                    </span>
+                  </label>
                 </div>
               </div>
+            )}
+          </SectionCard>
 
-              <button
-                onClick={addQuestion}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white
-                  px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
-              >
-                <Plus size={16} /> Add Question
-              </button>
-            </div>
-          )}
-
-          {/* JSON Tab */}
-          {activeTab === "json" && (
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">
-                  Paste an array of question objects.
-                </p>
+          {/* ── Add Questions ────────────────────────────────────────────────── */}
+          <div className="order-2 space-y-6">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              {/* Tab Header */}
+              <div className="flex border-b border-gray-100">
                 <button
-                  onClick={() => setShowJsonExample(!showJsonExample)}
-                  className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline"
+                  onClick={() => setActiveTab("manual")}
+                  className={`flex items-center gap-2 px-6 py-3.5 text-sm font-semibold transition-colors
+                ${
+                  activeTab === "manual"
+                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
                 >
-                  {showJsonExample ? <EyeOff size={14} /> : <Eye size={14} />}
-                  {showJsonExample ? "Hide" : "Show"} Example
+                  <PenLine size={15} /> Add Manually
+                </button>
+                <button
+                  onClick={() => setActiveTab("json")}
+                  className={`flex items-center gap-2 px-6 py-3.5 text-sm font-semibold transition-colors
+                ${
+                  activeTab === "json"
+                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                >
+                  <FileJson size={15} /> Paste JSON
                 </button>
               </div>
 
-              {showJsonExample && (
-                <div className="bg-gray-900 text-green-400 text-xs p-4 rounded-xl overflow-auto max-h-64 font-mono">
-                  <p className="text-gray-500 mb-2">// Expected format:</p>
-                  <pre>{JSON_EXAMPLE}</pre>
+              {/* Manual Tab */}
+              {activeTab === "manual" && (
+                <div className="p-6 space-y-4">
+                  <div>
+                    <Label required>Question</Label>
+                    <Input
+                      name="text"
+                      value={questionForm.text}
+                      onChange={handleQuestionChange}
+                      placeholder="Enter your question here..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {["A", "B", "C", "D"].map((opt) => (
+                      <div key={opt}>
+                        <Label>Option {opt}</Label>
+                        <Input
+                          name={`option${opt}`}
+                          value={questionForm[`option${opt}`]}
+                          onChange={handleQuestionChange}
+                          placeholder={`Option ${opt}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label>Correct Answer</Label>
+                      <div className="relative">
+                        <Select
+                          name="correctAnswer"
+                          value={questionForm.correctAnswer}
+                          onChange={handleQuestionChange}
+                        >
+                          {["A", "B", "C", "D"].map((o) => (
+                            <option key={o} value={o}>
+                              Option {o}
+                            </option>
+                          ))}
+                        </Select>
+                        <ChevronDown
+                          size={14}
+                          className="absolute right-3 top-3.5 text-gray-400 pointer-events-none"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Marks</Label>
+                      <Input
+                        type="number"
+                        name="marks"
+                        value={questionForm.marks}
+                        onChange={handleQuestionChange}
+                        min={1}
+                      />
+                    </div>
+                    <div>
+                      <Label>Explanation (optional)</Label>
+                      <Input
+                        name="explanation"
+                        value={questionForm.explanation}
+                        onChange={handleQuestionChange}
+                        placeholder="Why is this correct?"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={addQuestion}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white
+                  px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                  >
+                    <Plus size={16} /> Add Question
+                  </button>
                 </div>
               )}
 
-              <textarea
-                value={jsonInput}
-                onChange={(e) => {
-                  setJsonInput(e.target.value);
-                  setJsonError("");
-                }}
-                rows={10}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 font-mono text-sm
+              {/* JSON Tab */}
+              {activeTab === "json" && (
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-500">
+                      Paste an array of question objects.
+                    </p>
+                    <button
+                      onClick={() => setShowJsonExample(!showJsonExample)}
+                      className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline"
+                    >
+                      {showJsonExample ? (
+                        <EyeOff size={14} />
+                      ) : (
+                        <Eye size={14} />
+                      )}
+                      {showJsonExample ? "Hide" : "Show"} Example
+                    </button>
+                  </div>
+
+                  {showJsonExample && (
+                    <div className="bg-gray-900 text-green-400 text-xs p-4 rounded-xl overflow-auto max-h-64 font-mono">
+                      <p className="text-gray-500 mb-2">// Expected format:</p>
+                      <pre>{JSON_EXAMPLE}</pre>
+                    </div>
+                  )}
+
+                  <textarea
+                    value={jsonInput}
+                    onChange={(e) => {
+                      setJsonInput(e.target.value);
+                      setJsonError("");
+                    }}
+                    rows={10}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 font-mono text-sm
                   focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                placeholder='[{ "text": "Question?", "options": ["A","B","C","D"], "correctAnswer": "A" }]'
-              />
+                    placeholder='[{ "text": "Question?", "options": ["A","B","C","D"], "correctAnswer": "A", "explanation": "Text" }]'
+                  />
 
-              {jsonError && (
-                <div className="flex items-start gap-2 text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded-lg">
-                  <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />
-                  {jsonError}
-                </div>
-              )}
+                  {jsonError && (
+                    <div className="flex items-start gap-2 text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded-lg">
+                      <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />
+                      {jsonError}
+                    </div>
+                  )}
 
-              <button
-                onClick={handleImportJson}
-                disabled={!jsonInput.trim()}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white
+                  <button
+                    onClick={handleImportJson}
+                    disabled={!jsonInput.trim()}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white
                   px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors
                   disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                <Upload size={15} /> Import Questions
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* ── Questions Preview ────────────────────────────────────────────── */}
-        {questions.length > 0 && (
-          <SectionCard
-            title={`Questions Added (${questions.length})`}
-            icon={Tag}
-            accent="green"
-          >
-            <div className="space-y-3">
-              {questions.map((q, idx) => (
-                <div
-                  key={idx}
-                  className="border border-gray-100 rounded-xl p-4 bg-gray-50 relative group"
-                >
-                  <button
-                    onClick={() => removeQuestion(idx)}
-                    className="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-colors"
                   >
-                    <Trash2 size={15} />
+                    <Upload size={15} /> Import Questions
                   </button>
+                </div>
+              )}
+            </div>
 
-                  <p className="font-semibold text-gray-800 text-sm pr-8">
-                    <span className="text-gray-400 mr-2">{idx + 1}.</span>
-                    {q.text}
-                  </p>
+            {/* ── Questions Preview ────────────────────────────────────────────── */}
+            {questions.length > 0 && (
+              <SectionCard
+                title={`Questions Added (${questions.length})`}
+                icon={Tag}
+                accent="green"
+              >
+                <div className="space-y-3">
+                  {questions.map((q, idx) => (
+                    <div
+                      key={idx}
+                      className="border border-gray-100 rounded-xl p-4 bg-gray-50 relative group"
+                    >
+                      <button
+                        onClick={() => removeQuestion(idx)}
+                        className="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={15} />
+                      </button>
 
-                  <div className="grid grid-cols-2 gap-1.5 mt-3">
-                    {q.options.map((o, i) => (
-                      <div
-                        key={i}
-                        className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5
+                      <p className="font-semibold text-gray-800 text-sm pr-8">
+                        <span className="text-gray-400 mr-2">{idx + 1}.</span>
+                        {q.text}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-1.5 mt-3">
+                        {q.options.map((o, i) => (
+                          <div
+                            key={i}
+                            className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5
                           ${
                             o === q.correctAnswer
                               ? "bg-green-100 text-green-700 font-semibold"
                               : "bg-white text-gray-500 border border-gray-100"
                           }`}
-                      >
-                        {o === q.correctAnswer && <CheckCircle size={11} />}
-                        {String.fromCharCode(65 + i)}. {o}
+                          >
+                            {o === q.correctAnswer && <CheckCircle size={11} />}
+                            {String.fromCharCode(65 + i)}. {o}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
 
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="text-xs text-gray-400">
-                      Marks: {q.marks}
-                    </span>
-                    {q.explanation && (
-                      <span className="text-xs text-gray-400 truncate">
-                        💡 {q.explanation}
-                      </span>
-                    )}
-                  </div>
+                      <div className="flex items-center gap-4 mt-2">
+                        <span className="text-xs text-gray-400">
+                          Marks: {q.marks}
+                        </span>
+                        {q.explanation && (
+                          <span className="text-xs text-gray-400 truncate">
+                            💡 {q.explanation}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
+                <button
+                  onClick={() => setQuestions([])}
+                  className="mt-4 text-sm text-red-500 hover:text-red-700 flex items-center gap-1.5"
+                >
+                  <Trash2 size={14} /> Clear All Questions
+                </button>
+              </SectionCard>
+            )}
+
+            {/* ── Submit Button ────────────────────────────────────────────────── */}
             <button
-              onClick={() => setQuestions([])}
-              className="mt-4 text-sm text-red-500 hover:text-red-700 flex items-center gap-1.5"
-            >
-              <Trash2 size={14} /> Clear All Questions
-            </button>
-          </SectionCard>
-        )}
-
-        {/* ── Submit Button ────────────────────────────────────────────────── */}
-        <button
-          onClick={handleSubmitQuiz}
-          disabled={isSubmitting}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300
+              onClick={handleSubmitQuiz}
+              disabled={isSubmitting}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300
             disabled:cursor-not-allowed text-white py-3.5 rounded-xl font-bold
             text-base transition-colors flex items-center justify-center gap-2 shadow-sm"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 size={18} className="animate-spin" /> Creating Quiz...
-            </>
-          ) : (
-            <>Create Quiz ({questions.length} Questions)</>
-          )}
-        </button>
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" /> Creating
+                  Quiz...
+                </>
+              ) : (
+                <>Create Quiz ({questions.length} Questions)</>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

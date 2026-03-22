@@ -27,9 +27,15 @@ export const getQuizAttemptStatus = (slugOrId) =>
 export const submitQuiz = (slugOrId, answers, timeTaken = 0) =>
   apiClient.post(`/api/v1/quizzes/${slugOrId}/submit`, { answers, timeTaken });
 
-// Fixed the 404 error syntax here
 export const reviewQuiz = (slugOrId) =>
   apiClient.get(`/api/v1/quizzes/${slugOrId}/review`);
+
+///// leaderBoard
+export const getQuizLeaderboard = (slugOrId) =>
+  apiClient.get(`/api/v1/quizzes/${slugOrId}/leaderboard`);
+
+export const getGlobalLeaderboard = () =>
+  apiClient.get(`/api/v1/quizzes/leaderboard/global`);
 
 // ── Admin ────────────────────────────────────────────────────
 

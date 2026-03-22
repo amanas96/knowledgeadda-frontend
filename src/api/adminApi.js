@@ -25,6 +25,21 @@ export const adminAddContent = (courseId, formData) =>
   });
 export const adminDeleteContent = (courseId, contentId) =>
   apiClient.delete(`/api/admin/courses/${courseId}/content/${contentId}`);
+export const adminAddAttachment = (courseId, contentId, formData) =>
+  apiClient.post(
+    `/api/admin/courses/${courseId}/content/${contentId}/attachments`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    },
+  );
+
+export const adminDeleteAttachment = (courseId, contentId, attachmentId) =>
+  apiClient.delete(
+    `/api/admin/courses/${courseId}/content/${contentId}/attachments/${attachmentId}`,
+  );
 
 // Quizzes
 export const adminCreateQuiz = (data) =>

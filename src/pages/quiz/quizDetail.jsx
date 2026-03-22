@@ -1,6 +1,11 @@
 import { useParams, useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
-import { getQuizById, getQuizAttemptStatus } from "../../api/quizApi";
+import {
+  getQuizById,
+  getQuizAttemptStatus,
+  getQuizLeaderboard,
+} from "../../api/quizApi";
+import Leaderboard from "../../components/quizLeaderBoard";
 import {
   Clock,
   FileText,
@@ -13,6 +18,7 @@ import {
   CheckCircle,
   RotateCcw,
   Eye,
+  Trophy,
 } from "lucide-react";
 
 const QuizDetail = () => {
@@ -21,18 +27,21 @@ const QuizDetail = () => {
   const [quiz, setQuiz] = useState(null);
   const [attemptStatus, setAttemptStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [leaderboard, setLeaderboard] = useState([]);
   const urlParam = quiz?.slug || slug;
 
   useEffect(() => {
     if (!slug) return;
     const fetchData = async () => {
       try {
-        const [quizRes, statusRes] = await Promise.all([
+        const [quizRes, statusRes, leaderboardRes] = await Promise.all([
           getQuizById(slug),
           getQuizAttemptStatus(slug),
+          getQuizLeaderboard(slug),
         ]);
         setQuiz(quizRes.data);
         setAttemptStatus(statusRes.data);
+        setLeaderboard(leaderboardRes.data.leaderboard);
       } catch (err) {
         console.error("Failed to fetch quiz details", err);
       } finally {
@@ -151,6 +160,17 @@ const QuizDetail = () => {
                 </p>
               </div>
             ))}
+          </div>
+          {/* add leaderboard section in JSX — after stats grid in LEFT COLUMN */}
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2">
+              <Trophy size={18} className="text-yellow-500" />
+              <h2 className="text-lg font-bold text-gray-800">Leaderboard</h2>
+            </div>
+            <div className="p-6">
+              <Leaderboard data={leaderboard} type="quiz" />
+            </div>
           </div>
         </div>
 

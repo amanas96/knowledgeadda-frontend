@@ -62,7 +62,7 @@ const FeaturedCourses = () => {
                 if (!course) return null; // Skip if course object is invalid
                 return (
                   <Link
-                    to={`/course/${course._id}`}
+                    to={`/course/${course.slug || course._id}`}
                     key={course._id}
                     className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 group border border-gray-100 flex flex-col h-full"
                   >

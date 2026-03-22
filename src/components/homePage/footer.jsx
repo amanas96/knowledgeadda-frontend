@@ -64,16 +64,12 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <button
-                  onClick={() =>
-                    document
-                      .getElementById("contact")
-                      .scrollIntoView({ behavior: "smooth" })
-                  }
+                <Link
+                  to="/contact"
                   className="hover:text-white transition-colors"
                 >
                   Contact Support
-                </button>
+                </Link>
               </li>
               <li>
                 <a href="#" className="hover:text-white transition-colors">
@@ -88,19 +84,28 @@ const Footer = () => {
             </h4>
             <ul className="space-y-3 text-sm">
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <Link
+                  to="/privacy-policy"
+                  className="hover:text-white transition-colors"
+                >
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <Link
+                  to="/terms-of-service"
+                  className="hover:text-white transition-colors"
+                >
                   Terms of Service
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <Link
+                  to="/cookie-policy"
+                  className="hover:text-white transition-colors"
+                >
                   Cookie Policy
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

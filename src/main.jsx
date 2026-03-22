@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./App.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./context/authContext.jsx";
+
 import App from "./App.jsx";
 
 const router = createBrowserRouter([
