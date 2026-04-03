@@ -11,12 +11,28 @@ export const adminCloseTicket = (id) =>
   apiClient.put(`/api/admin/tickets/close/${id}`);
 
 // Courses
-export const adminCreateCourse = (data) =>
-  apiClient.post("/api/admin/courses", data);
-export const adminUpdateCourse = (courseId, data) =>
-  apiClient.put(`/api/admin/courses/${courseId}`, data);
-export const adminDeleteCourse = (courseId) =>
-  apiClient.delete(`/api/admin/courses/${courseId}`);
+// export const adminCreateCourse = (data) =>
+//   apiClient.post("/api/admin/courses", data);
+export const adminCreateCourse = async (payload) => {
+  const { data } = await apiClient.post("/api/admin/courses", payload);
+  return data;
+};
+
+// export const adminUpdateCourse = (courseId, data) =>
+//   apiClient.put(`/api/admin/courses/${courseId}`, data);
+export const adminUpdateCourse = async (courseId, payload) => {
+  const { data } = await apiClient.put(
+    `/api/admin/courses/${courseId}`,
+    payload,
+  );
+  return data;
+};
+// export const adminDeleteCourse = (courseId) =>
+//   apiClient.delete(`/api/admin/courses/${courseId}`);
+export const adminDeleteCourse = async (courseId) => {
+  const { data } = await apiClient.delete(`/api/admin/courses/${courseId}`);
+  return data;
+};
 
 // Content
 export const adminAddContent = (courseId, formData) =>
@@ -42,6 +58,14 @@ export const adminDeleteAttachment = (courseId, contentId, attachmentId) =>
   );
 
 // Quizzes
+
+export const adminGetAllQuizzes = () => apiClient.get("/api/admin/quizzes");
+export const adminGetSingleQuestion = (quizId, questionId) =>
+  apiClient.get(`/api/admin/quizzes/${quizId}/questions/${questionId}`);
+export const adminGetQuizDetails = (quizId) =>
+  apiClient.get(`/api/admin/quizzes/${quizId}`);
+export const adminGetQuizQuestions = (quizId) =>
+  apiClient.get(`/api/admin/quizzes/${quizId}/questions?admin=true`);
 export const adminCreateQuiz = (data) =>
   apiClient.post("/api/admin/quizzes", data);
 export const adminUpdateQuiz = (quizId, data) =>
@@ -53,6 +77,8 @@ export const adminGetQuizzesByCourse = (courseId) =>
 
 // Questions
 export const adminAddQuestion = (quizId, data) =>
+  apiClient.post(`/api/admin/quizzes/${quizId}/questions`, data);
+export const adminAddQuestionToExistingQuiz = (quizId, data) =>
   apiClient.post(`/api/admin/quizzes/${quizId}/questions`, data);
 export const adminUpdateQuestion = (quizId, questionId, data) =>
   apiClient.put(`/api/admin/quizzes/${quizId}/questions/${questionId}`, data);

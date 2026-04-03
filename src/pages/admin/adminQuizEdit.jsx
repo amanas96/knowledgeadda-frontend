@@ -4,7 +4,11 @@ import {
   adminUpdateQuiz,
   adminDeleteQuiz,
   adminDeleteQuestion,
+  adminGetQuizDetails,
+  adminGetQuizQuestions,
+  adminAddQuestion,
 } from "../../api/adminApi";
+
 import apiClient from "../../api/axios";
 import {
   ArrowLeft,
@@ -80,11 +84,22 @@ const AdminQuizEdit = () => {
     allowMultipleAttempts: true,
   });
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newQuestion, setNewQuestion] = useState({
+    text: "",
+    optionA: "",
+    optionB: "",
+    optionC: "",
+    optionD: "",
+    correctAnswer: "A",
+    marks: 1,
+    explanation: "",
+  });
   // ── Fetch quiz + questions ────────────────────────────────────────────────
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const { data } = await apiClient.get(`/api/v1/quizzes/${quizId}`);
+        const { data } = await adminGetQuizDetails(quizId);
         setQuiz(data);
         setQuizForm({
           title: data.title || "",
@@ -98,9 +113,7 @@ const AdminQuizEdit = () => {
           allowMultipleAttempts: data.allowMultipleAttempts ?? true,
         });
 
-        const questionsRes = await apiClient.get(
-          `/api/v1/quizzes/${quizId}/questions`,
-        );
+        const questionsRes = await adminGetQuizQuestions(quizId);
         setQuestions(questionsRes.data?.questions || questionsRes.data || []);
       } catch (err) {
         console.error(err);
@@ -197,12 +210,79 @@ const AdminQuizEdit = () => {
 
   // ── Delete question ───────────────────────────────────────────────────────
   const handleDeleteQuestion = async (questionId) => {
-    if (!window.confirm("Delete this question?")) return;
+    // 1. Confirm with user
+    if (!window.confirm("Are you sure you want to delete this question?"))
+      return;
+
+    // 2. Save a backup of the current questions (in case of server failure)
+    const previousQuestions = [...questions];
+
+    // 3. OPTIMISTIC UPDATE: Remove from UI immediately
+    setQuestions((prev) => prev.filter((q) => q._id !== questionId));
+
     try {
+      // 4. Send request to backend
       await adminDeleteQuestion(quizId, questionId);
-      setQuestions((prev) => prev.filter((q) => q._id !== questionId));
+
+      // Optional: Show a silent success notification
+      console.log("Question deleted from server successfully.");
     } catch (err) {
-      alert("Failed to delete question.");
+      // 5. ROLLBACK: If server fails, put the question back
+      setQuestions(previousQuestions);
+
+      alert(
+        "Server error: Could not delete the question. It has been restored to your list.",
+      );
+      console.error("Delete failed:", err);
+    }
+  };
+
+  // - Add question
+  const handleAddQuestion = async () => {
+    if (!newQuestion.text.trim()) return alert("Question text is required.");
+
+    try {
+      const options = [
+        newQuestion.optionA,
+        newQuestion.optionB,
+        newQuestion.optionC,
+        newQuestion.optionD,
+      ];
+
+      // Convert 'A' to the actual text value
+      const correctAnswerText =
+        options[newQuestion.correctAnswer.charCodeAt(0) - 65];
+
+      const payload = {
+        text: newQuestion.text,
+        options,
+        correctAnswer: correctAnswerText,
+        marks: Number(newQuestion.marks),
+        explanation: newQuestion.explanation,
+      };
+      console.log("DEBUG: Payload being sent:", payload);
+      const { data } = await adminAddQuestion(quizId, payload);
+      console.log("DEBUG: Backend Response received:", data);
+
+      // 🚀 Update local list instantly
+      setQuestions((prev) => [...prev, data]);
+
+      // Reset and Close
+      setIsModalOpen(false);
+      setNewQuestion({
+        text: "",
+        optionA: "",
+        optionB: "",
+        optionC: "",
+        optionD: "",
+        correctAnswer: "A",
+        marks: 1,
+        explanation: "",
+      });
+
+      alert("Question added successfully!");
+    } catch (err) {
+      alert(err?.response?.data?.message || "Failed to add question.");
     }
   };
 
@@ -450,13 +530,12 @@ const AdminQuizEdit = () => {
                 {questions.length} question{questions.length !== 1 ? "s" : ""}
               </p>
             </div>
-            <Link
-              to={`/admin/quizzes/${quizId}/questions/new`}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700
-                text-white rounded-lg text-sm font-semibold transition-colors"
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-colors"
             >
               <Plus size={15} /> Add Question
-            </Link>
+            </button>
           </div>
 
           {questions.length === 0 ? (
@@ -515,6 +594,114 @@ const AdminQuizEdit = () => {
           )}
         </div>
       </div>
+
+      {/* Modal View*/}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="font-bold text-gray-800">Add New Question</h2>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <Label required>Question Text</Label>
+                <Input
+                  value={newQuestion.text}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, text: e.target.value })
+                  }
+                  placeholder="What is the capital of..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {["A", "B", "C", "D"].map((opt) => (
+                  <div key={opt}>
+                    <Label required>Option {opt}</Label>
+                    <Input
+                      value={newQuestion[`option${opt}`]}
+                      onChange={(e) =>
+                        setNewQuestion({
+                          ...newQuestion,
+                          [`option${opt}`]: e.target.value,
+                        })
+                      }
+                      placeholder={`Option ${opt}`}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Correct Option</Label>
+                  <Select
+                    value={newQuestion.correctAnswer}
+                    onChange={(e) =>
+                      setNewQuestion({
+                        ...newQuestion,
+                        correctAnswer: e.target.value,
+                      })
+                    }
+                  >
+                    {["A", "B", "C", "D"].map((o) => (
+                      <option key={o} value={o}>
+                        Option {o}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label>Marks</Label>
+                  <Input
+                    type="number"
+                    value={newQuestion.marks}
+                    onChange={(e) =>
+                      setNewQuestion({ ...newQuestion, marks: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Explanation (Optional)</Label>
+                <Input
+                  value={newQuestion.explanation}
+                  onChange={(e) =>
+                    setNewQuestion({
+                      ...newQuestion,
+                      explanation: e.target.value,
+                    })
+                  }
+                  placeholder="Explain why this answer is correct..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleAddQuestion}
+                  className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-bold hover:bg-blue-700 transition-colors"
+                >
+                  Save Question
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-6 py-2.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

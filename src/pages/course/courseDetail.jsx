@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import apiClient from "../../api/axios";
+import {
+  getCourseByIdforCourse,
+  getCourseContent,
+  getCourseQuizzes,
+} from "../../api/courseApi";
 import { useAuth } from "../../context/authContext";
 import {
   enrollInCourse,
@@ -64,14 +69,14 @@ const CourseDetailPage = () => {
     const fetchCourseData = async () => {
       try {
         const [courseRes, contentRes, quizRes, enrollRes] = await Promise.all([
-          apiClient.get(`/api/v1/courses/${courseId}`),
-          apiClient.get(`/api/v1/courses/${courseId}/content`),
-          apiClient.get(`/api/v1/quizzes/course/${courseId}`),
+          getCourseByIdforCourse(courseId),
+          getCourseContent(courseId),
+          getCourseQuizzes(courseId),
           getEnrollmentStatus(courseId),
         ]);
         setCourse(courseRes.data);
         setContent(contentRes.data.items || []);
-        setGroupedContent(contentRes.data.grouped || {}); // ✅ grouped object
+        setGroupedContent(contentRes.data.grouped || {});
         setQuizzes(quizRes.data || []);
         setIsEnrolled(enrollRes.data.isEnrolled);
       } catch (err) {

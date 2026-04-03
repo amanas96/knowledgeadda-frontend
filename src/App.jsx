@@ -44,12 +44,14 @@ import AdminCourseList from "./pages/admin/adminCourseList.jsx";
 import AdminCreateCourse from "./pages/admin/adminCreateCourse.jsx";
 import AdminManageCourse from "./pages/admin/adminManageCourse.jsx";
 import AdminQuizCreate from "./pages/admin/adminQuizCreate.jsx";
+import AdminQuizManage from "./pages/admin/adminManageQuiz.jsx";
 import AdminQuizEdit from "./pages/admin/adminQuizEdit.jsx";
 import AdminQuestionEdit from "./pages/admin/adminQuestionEdit.jsx";
 import AdminContactList from "./pages/admin/adminContactList.jsx";
 import AdminTicketConversation from "./pages/admin/adminConatctConversation.jsx";
 import AdminAnalytics from "./pages/admin/adminAnalytics.jsx";
 import PrivateRoute from "./route/privateRoute.jsx";
+import PublicRoute from "./route/publicRoute.jsx";
 import QuizLayout from "./components/quizLayout.jsx";
 import PrivacyPolicy from "./pages/legal/privacyPolicy.jsx";
 import TermsOfService from "./pages/legal/TermsOfService.jsx";
@@ -68,7 +70,6 @@ function App() {
 
   return (
     <>
-      {" "}
       <ScrollToTop />
       <Routes>
         {/* ---------------------------------------------------
@@ -76,10 +77,38 @@ function App() {
       ---------------------------------------------------- */}
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
-          <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
-          <Route path="forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="reset-password/:token" element={<ResetPasswordPage />} />
+          <Route
+            path="login"
+            element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="register"
+            element={
+              <PublicRoute>
+                <RegisterPage />{" "}
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPasswordPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="reset-password/:token"
+            element={
+              <PublicRoute>
+                <ResetPasswordPage />
+              </PublicRoute>
+            }
+          />
           <Route path="about" element={<AboutPage />} />
           <Route path="contact" element={<ContactPage />} />
 
@@ -173,7 +202,6 @@ function App() {
 
         <Route path="/" element={<Layout />}>
           <Route path="quizzes" element={<QuizList />} />
-
           <Route
             path="quiz/:slug"
             element={
@@ -182,7 +210,6 @@ function App() {
               </PrivateRoute>
             }
           />
-
           <Route
             path="quiz/:slug/result"
             element={
@@ -191,9 +218,17 @@ function App() {
               </PrivateRoute>
             }
           />
-
           <Route
             path="quiz/:slug/review"
+            element={
+              <PrivateRoute>
+                <QuizReview />
+              </PrivateRoute>
+            }
+          />
+          // App.jsx
+          <Route
+            path="/quiz/:slug/review/:attemptId"
             element={
               <PrivateRoute>
                 <QuizReview />
@@ -215,6 +250,7 @@ function App() {
               path="courses/:courseId/manage"
               element={<AdminManageCourse />}
             />
+            <Route path="/admin/quizzes/manage" element={<AdminQuizManage />} />
             <Route path="quizzes/new" element={<AdminQuizCreate />} />
             <Route path="quizzes/:quizId/edit" element={<AdminQuizEdit />} />
             <Route

@@ -11,7 +11,7 @@ const AdminCourseList = () => {
   const fetchCourses = async () => {
     try {
       const { data } = await apiClient.get("/api/v1/courses"); // ✅ public route stays
-      setCourses(data);
+      setCourses(data.courses);
     } catch (err) {
       setError("Failed to load courses.");
     } finally {

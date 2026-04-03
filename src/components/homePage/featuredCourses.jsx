@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import apiClient from "../../api/axios";
+import { getCourses } from "../../api/courseApi";
 import { Link } from "react-router-dom";
 import { PlayCircle, ArrowRight, Award } from "lucide-react";
 
@@ -10,15 +10,8 @@ const FeaturedCourses = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const { data } = await apiClient.get("/api/v1/courses");
-
-        // Safety check: Ensure data is an array before using slice
-        if (Array.isArray(data)) {
-          setFeaturedCourses(data.slice(0, 3));
-        } else {
-          console.error("API response is not an array:", data);
-          setFeaturedCourses([]);
-        }
+        const data = await getCourses({ page: 1, limit: 6 });
+        setFeaturedCourses(data.courses);
       } catch (err) {
         console.error("Failed to load courses", err);
         setFeaturedCourses([]);
@@ -59,7 +52,7 @@ const FeaturedCourses = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredCourses && featuredCourses.length > 0 ? (
               featuredCourses.map((course) => {
-                if (!course) return null; // Skip if course object is invalid
+                if (!course) return null;
                 return (
                   <Link
                     to={`/course/${course.slug || course._id}`}
@@ -101,9 +94,9 @@ const FeaturedCourses = () => {
                       <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
                         {course.title || "Untitled Course"}
                       </h3>
-                      <p className="text-gray-500 text-sm mb-6 line-clamp-3 flex-grow">
+                      {/* <p className="text-gray-500 text-sm mb-6 line-clamp-3 flex-grow">
                         {course.description || "No description available."}
-                      </p>
+                      </p> */}
 
                       <div className="flex items-center justify-between  border-t border-gray-100 mt-auto">
                         <div className="flex items-center text-gray-500 text-sm font-medium">

@@ -5,8 +5,8 @@ import Header from "./header";
 const Layout = () => {
   return (
     <div className="flex flex-col min-h-screen">
-      <Header /> {/* fixed, takes no space */}
-      <main className="flex-1 mt-16 px-4 py-6">
+      <Header />
+      <main className="flex-1 mt-16 px-4 ">
         {/* mt-16 = header height (64px) */}
         <Outlet />
       </main>

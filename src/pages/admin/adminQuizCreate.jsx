@@ -102,10 +102,11 @@ const AdminQuizCreate = () => {
     courseId: preSelectedCourseId || "",
     category: "General",
     customCategory: "",
-    quizType: "standalone",
+    quizType: preSelectedCourseId ? "course" : "standalone",
     timeLimit: "",
     totalMarks: "",
     isPremium: false,
+    isPublished: true,
     allowMultipleAttempts: true,
   });
 
@@ -133,13 +134,16 @@ const AdminQuizCreate = () => {
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [slugEdited, setSlugEdited] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [questionError, setQuestionError] = useState("");
+  const [createdQuiz, setCreatedQuiz] = useState(null);
 
   // ── Load courses ─────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const { data } = await apiClient.get("/api/v1/courses");
-        setCourses(data);
+        setCourses(data.courses);
       } catch (err) {
         console.error(err);
       } finally {
@@ -151,6 +155,7 @@ const AdminQuizCreate = () => {
 
   // ── Handle quiz field changes ─────────────────────────────────────────────
   const handleQuizChange = (e) => {
+    setFormError("");
     const { name, value, checked, type } = e.target;
 
     // Auto-generate slug from title (only if admin hasn't manually edited slug)
@@ -203,9 +208,10 @@ const AdminQuizCreate = () => {
     const { text, optionA, optionB, optionC, optionD, correctAnswer } =
       questionForm;
     if (!text || !optionA || !optionB || !optionC || !optionD) {
-      alert("Please fill all question fields.");
+      setQuestionError("Please fill all question fields.");
       return;
     }
+    setQuestionError("");
     const options = [optionA, optionB, optionC, optionD];
     const correctAnswerText = options[correctAnswer.charCodeAt(0) - 65];
 
@@ -289,44 +295,64 @@ const AdminQuizCreate = () => {
 
   // ── Submit quiz ───────────────────────────────────────────────────────────
   const handleSubmitQuiz = async () => {
-    if (!quizData.title.trim()) return alert("Quiz title is required.");
-    if (!quizData.slug.trim()) return alert("Quiz slug is required.");
-    if (quizData.quizType === "course" && !quizData.courseId) {
-      return alert("Please select a course.");
-    }
-    if (quizData.category === "Other" && !quizData.customCategory.trim()) {
-      return alert("Please enter a custom category.");
-    }
-    if (questions.length === 0) return alert("Add at least one question.");
+    // ── Validation ────────────────────────────────────────────────────────────
+    if (!quizData.title.trim()) return setFormError("Quiz title is required.");
+    if (!quizData.slug.trim()) return setFormError("Quiz slug is required.");
+    if (quizData.quizType === "course" && !quizData.courseId)
+      return setFormError("Please select a course.");
+    if (quizData.category === "Other" && !quizData.customCategory.trim())
+      return setFormError("Please enter a custom category.");
+    if (questions.length === 0)
+      return setFormError("Add at least one question.");
 
+    setFormError("");
     setIsSubmitting(true);
+
     try {
       const payload = {
         title: quizData.title,
         slug: quizData.slug,
         description: quizData.description,
-        course: quizData.courseId,
+        courseId: quizData.quizType === "course" ? quizData.courseId : null,
         category: quizData.category,
         customCategory:
           quizData.category === "Other" ? quizData.customCategory : null,
         timeLimit: Number(quizData.timeLimit) || 0,
-        courseId: quizData.quizType === "course" ? quizData.courseId : null,
-        quizType: quizData.quizType,
         totalMarks: Number(quizData.totalMarks) || 0,
+        quizType: quizData.quizType,
         isPremium: quizData.isPremium,
+        isPublished: quizData.isPublished,
         allowMultipleAttempts: quizData.allowMultipleAttempts,
+        questions, // ← atomic — one request, no shell possible
       };
 
-      const quizRes = await adminCreateQuiz(payload);
-      const quizId = quizRes.data._id;
+      const res = await adminCreateQuiz(payload);
+      const quizId = res.data.quiz?._id || res.data._id;
 
-      for (const q of questions) {
-        await adminAddQuestion(quizId, q);
-      }
+      setCreatedQuiz({
+        id: quizId,
+        title: res.data.quiz?.title || quizData.title,
+        questionsAdded: res.data.questionsAdded || questions.length,
+      });
 
-      navigate("/admin/courses");
+      setQuizData({
+        title: "",
+        slug: "",
+        description: "",
+        courseId: preSelectedCourseId || "",
+        category: "General",
+        customCategory: "",
+        quizType: preSelectedCourseId ? "course" : "standalone",
+        timeLimit: "",
+        totalMarks: "",
+        isPremium: false,
+        isPublished: true,
+        allowMultipleAttempts: true,
+      });
+      setQuestions([]);
+      setSlugEdited(false);
     } catch (err) {
-      alert(err?.response?.data?.message || "Failed to create quiz.");
+      setFormError(err?.response?.data?.message || "Failed to create quiz.");
     } finally {
       setIsSubmitting(false);
     }
@@ -345,6 +371,40 @@ const AdminQuizCreate = () => {
             </span>
           </h1>
         </div>
+
+        {/* ── Success Banner ──────────────────────────────────────────────────── */}
+        {createdQuiz && (
+          <div
+            className="flex items-start justify-between gap-4 bg-green-50 
+    border border-green-200 rounded-xl p-4"
+          >
+            <div className="flex items-start gap-3">
+              <CheckCircle
+                size={20}
+                className="text-green-600 mt-0.5 flex-shrink-0"
+              />
+              <div>
+                <p className="font-semibold text-green-800">
+                  Quiz created successfully!
+                </p>
+                <p className="text-sm text-green-700 mt-0.5">
+                  <span className="font-medium">"{createdQuiz.title}"</span> was
+                  saved with {createdQuiz.questionsAdded} question
+                  {createdQuiz.questionsAdded !== 1 ? "s" : ""}.
+                </p>
+                <p className="text-xs text-green-600 mt-2">
+                  You can create another quiz below.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setCreatedQuiz(null)}
+              className="text-green-400 hover:text-green-600 text-lg leading-none"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* ── Quiz Details ────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6  items-start">
@@ -421,6 +481,7 @@ const AdminQuizCreate = () => {
                     <option value="mock_test">Mock Test</option>
                   </select>
                 </div>
+
                 {/* Course */}
                 {quizData.quizType === "course" && (
                   <div>
@@ -550,6 +611,40 @@ const AdminQuizCreate = () => {
                     </div>
                     <span className="text-sm font-medium text-gray-700">
                       Allow Multiple Attempts
+                    </span>
+                  </label>
+
+                  {/* Publish Toggle */}
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        name="isPublished"
+                        checked={quizData.isPublished}
+                        onChange={handleQuizChange}
+                        className="sr-only"
+                      />
+                      <div
+                        className={`w-10 h-6 rounded-full transition-colors ${
+                          quizData.isPublished ? "bg-blue-500" : "bg-gray-200"
+                        }`}
+                      >
+                        <div
+                          className={`w-4 h-4 bg-white rounded-full shadow absolute top-1 transition-transform ${
+                            quizData.isPublished
+                              ? "translate-x-5"
+                              : "translate-x-1"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                      {quizData.isPublished ? (
+                        <Eye size={14} className="text-blue-500" />
+                      ) : (
+                        <EyeOff size={14} className="text-gray-400" />
+                      )}
+                      Publish Quiz
                     </span>
                   </label>
                 </div>
@@ -790,6 +885,15 @@ const AdminQuizCreate = () => {
             )}
 
             {/* ── Submit Button ────────────────────────────────────────────────── */}
+            {formError && (
+              <div
+                className="flex items-center gap-2 text-red-600 bg-red-50 
+    border border-red-200 p-3 rounded-lg text-sm"
+              >
+                <AlertCircle size={15} />
+                {formError}
+              </div>
+            )}
             <button
               onClick={handleSubmitQuiz}
               disabled={isSubmitting}

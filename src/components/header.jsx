@@ -76,8 +76,8 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-white/90 backdrop-blur-md shadow-sm">
-      <div className="container mx-auto px-6 flex justify-between items-center h-16">
+    <header className="fixed top-0 left-0  w-full z-50 bg-white/90 backdrop-blur-md shadow-sm">
+      <div className="container mx-auto px-6  flex justify-between items-center h-16">
         {/* LOGO */}
         <Link to="/" className="text-2xl font-extrabold text-gray-900">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700">

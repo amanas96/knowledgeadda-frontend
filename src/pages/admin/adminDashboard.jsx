@@ -398,6 +398,13 @@ const AdminDashboard = () => {
             color="bg-purple-50"
           />
           <ActionCard
+            to="/admin/quizzes/manage" // Points to the new page
+            icon={<Settings size={20} className="text-purple-600" />}
+            label="Manage Quizzes"
+            sub="Edit or delete existing quizzes"
+            color="bg-purple-50"
+          />
+          <ActionCard
             to="/admin/quizzes/new"
             icon={<PlusCircle size={20} className="text-indigo-600" />}
             label="Create New Quiz"

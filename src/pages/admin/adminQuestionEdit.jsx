@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { adminUpdateQuestion, adminDeleteQuestion } from "../../api/adminApi"; // ✅
+import {
+  adminUpdateQuestion,
+  adminGetSingleQuestion,
+  adminDeleteQuestion,
+} from "../../api/adminApi"; // ✅
 import apiClient from "../../api/axios";
 
 const AdminQuestionEdit = () => {
@@ -21,24 +25,20 @@ const AdminQuestionEdit = () => {
   useEffect(() => {
     const loadQuestion = async () => {
       try {
-        const { data } = await apiClient.get(
-          `/api/v1/quizzes/${quizId}/questions`,
-        ); // ✅ student route fine here
-        const q = data.find((x) => x._id === questionId);
-        if (!q) {
-          alert("Question not found");
-          navigate(-1);
-          return;
-        }
+        const { data } = await adminGetSingleQuestion(quizId, questionId);
+
+        const answerIndex = data.options.indexOf(data.correctAnswer);
+        const answerLabel = ["A", "B", "C", "D"][answerIndex] || "A";
+
         setForm({
-          text: q.text,
-          optionA: q.options[0],
-          optionB: q.options[1],
-          optionC: q.options[2] ?? "",
-          optionD: q.options[3] ?? "",
-          correctAnswer: q.correctAnswer,
-          marks: q.marks,
-          explanation: q.explanation || "",
+          text: data.text,
+          optionA: data.options[0] || "",
+          optionB: data.options[1] || "",
+          optionC: data.options[2] || "",
+          optionD: data.options[3] || "",
+          correctAnswer: answerLabel, // dropdown now shows the real stored answer
+          marks: data.marks || 1,
+          explanation: data.explanation || "",
         });
       } catch (err) {
         alert("Failed to load question");
@@ -54,21 +54,47 @@ const AdminQuestionEdit = () => {
 
   const saveQuestion = async () => {
     try {
-      const options = [form.optionA, form.optionB, form.optionC, form.optionD];
-      const payload = {
-        text: form.text,
-        options,
-        correctAnswer:
-          options[["A", "B", "C", "D"].indexOf(form.correctAnswer)],
-        marks: form.marks,
-        explanation: form.explanation,
+      const optionMap = {
+        A: form.optionA?.trim(),
+        B: form.optionB?.trim(),
+        C: form.optionC?.trim(),
+        D: form.optionD?.trim(),
       };
-      await adminUpdateQuestion(quizId, questionId, payload); // ✅
+
+      const actualCorrectAnswerText = optionMap[form.correctAnswer];
+
+      // 3. Validation: Check if the text actually exists
+      if (!actualCorrectAnswerText) {
+        return alert(
+          `Option ${form.correctAnswer} is empty. Please enter text for the correct answer.`,
+        );
+      }
+
+      // 4. Construct the clean options array
+      const options = [
+        optionMap.A,
+        optionMap.B,
+        optionMap.C,
+        optionMap.D,
+      ].filter((opt) => opt !== "" && opt !== undefined);
+
+      // 5. Build the final payload
+      const payload = {
+        text: form.text.trim(),
+        options: options,
+        correctAnswer: actualCorrectAnswerText,
+        marks: Number(form.marks) || 1,
+        explanation: form.explanation?.trim() || "",
+      };
+
+      // 6. API Call
+      await adminUpdateQuestion(quizId, questionId, payload);
+
       alert("Question updated!");
       navigate(`/admin/quizzes/${quizId}/edit`);
     } catch (err) {
-      console.error(err);
-      alert("Failed to save question.");
+      console.error("Save Error:", err.response?.data);
+      alert(err.response?.data?.message || "Failed to save question.");
     }
   };
 

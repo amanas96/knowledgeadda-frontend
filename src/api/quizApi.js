@@ -23,12 +23,18 @@ export const getQuizQuestions = (slugOrId) =>
 
 export const getQuizAttemptStatus = (slugOrId) =>
   apiClient.get(`/api/v1/quizzes/${slugOrId}/attempt-status`);
+export const getAttemptHistory = (slugOrId) =>
+  apiClient.get(`/api/v1/quizzes/${slugOrId}/attempts`);
 
 export const submitQuiz = (slugOrId, answers, timeTaken = 0) =>
   apiClient.post(`/api/v1/quizzes/${slugOrId}/submit`, { answers, timeTaken });
 
-export const reviewQuiz = (slugOrId) =>
-  apiClient.get(`/api/v1/quizzes/${slugOrId}/review`);
+export const reviewQuiz = (slugOrId, attempt) => {
+  const url = attempt
+    ? `/api/v1/quizzes/${slugOrId}/review?attempt=${attempt}`
+    : `/api/v1/quizzes/${slugOrId}/review`;
+  return apiClient.get(url);
+};
 
 ///// leaderBoard
 export const getQuizLeaderboard = (slugOrId) =>
